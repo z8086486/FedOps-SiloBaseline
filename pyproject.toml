@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fedops-silo-baseline"
+version = "0.1.0"
+description = "FedOps owner starter for local validation and silo participation"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = "Apache-2.0"
+dependencies = [
+    "flwr[simulation]==1.26.1",
+    "numpy==1.26.4",
+    "torch==2.8.0",
+    "torchvision==0.23.0",
+    "tomli==2.2.1; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+participate = [
+    "fedops==1.1.30.13",
+    "omegaconf==2.3.0",
+]
+
+[project.scripts]
+fedops-baseline-validate = "fedops_silo_baseline.validation:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["fedops_silo_baseline"]
+
+[tool.flwr.app]
+publisher = "gfedops"
+
+[tool.flwr.app.components]
+serverapp = "fedops_silo_baseline.launcher_app:app"
+clientapp = "fedops_silo_baseline.client_app:app"
+
+[tool.flwr.app.config]
+mode = "validate"
+task_id = "task_id"
+runtime_key = "task_id"
+validation_samples = 32
+validation_batches = 2
+manager_port = 8004
+manager_startup_timeout = 30
+server_manager_url = "http://ccl.gachon.ac.kr:40019"
+fl_server_host = "ccl.gachon.ac.kr"
