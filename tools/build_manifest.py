@@ -15,6 +15,7 @@ MANIFEST_PATH = ROOT / "baseline-manifest.json"
 FILE_METADATA: Dict[str, Dict[str, object]] = {
     "LICENSE": {"role": "license", "content_type": "text/plain", "editable": False},
     "README.md": {"role": "documentation", "content_type": "text/markdown", "editable": True},
+    "manifest.json": {"role": "tool_ai_manifest", "content_type": "application/json", "editable": True},
     "pyproject.toml": {"role": "flower_config", "content_type": "application/toml", "editable": False},
     "fedops_silo_baseline/__init__.py": {"role": "runtime", "content_type": "text/x-python", "editable": False},
     "fedops_silo_baseline/client_app.py": {"role": "runtime", "content_type": "text/x-python", "editable": False},

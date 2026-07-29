@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
@@ -37,6 +38,64 @@ def mnist_transform():
         transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,)),
     ])
+
+
+def preprocess(
+    dataset_path: str,
+    batch_size: int,
+) -> DataLoader:
+    """Load raw MNIST inputs from JSON and return an inference DataLoader."""
+    if not isinstance(dataset_path, str) or not dataset_path.strip():
+        raise ValueError("dataset_path must be a non-empty string")
+    if batch_size < 1:
+        raise ValueError("batch_size must be at least 1")
+
+    input_path = Path(dataset_path)
+    if not input_path.is_file():
+        raise ValueError(f"dataset_path must point to a file: {dataset_path}")
+    try:
+        with input_path.open("r", encoding="utf-8") as file:
+            inputs = json.load(file)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError(
+            f"dataset_path must contain valid UTF-8 JSON: {dataset_path}"
+        ) from error
+    if not isinstance(inputs, list) or not inputs:
+        raise ValueError("dataset JSON must be a non-empty array")
+
+    samples = []
+    for row_index, row in enumerate(inputs):
+        if not isinstance(row, dict):
+            raise ValueError(f"input {row_index} must be an object")
+        if "image" not in row:
+            raise ValueError(f"input {row_index} is missing feature: image")
+
+        try:
+            image = torch.as_tensor(row["image"], dtype=torch.float32)
+        except (TypeError, ValueError) as error:
+            raise ValueError(
+                f"input {row_index} image must be a numeric array"
+            ) from error
+
+        if list(image.shape) == [28, 28]:
+            image = image.unsqueeze(0)
+        if list(image.shape) != [1, 28, 28]:
+            raise ValueError(
+                f"input {row_index} image must have shape [28, 28] "
+                f"or [1, 28, 28], received {list(image.shape)}"
+            )
+        if not bool(torch.isfinite(image).all().item()):
+            raise ValueError(f"input {row_index} image contains a non-finite value")
+        if bool(((image < 0) | (image > 255)).any().item()):
+            raise ValueError(
+                f"input {row_index} pixel values must be between 0 and 255"
+            )
+
+        image = image.div(255.0)
+        image = image.sub(0.5).div(0.5)
+        samples.append({"inputs": image})
+
+    return DataLoader(samples, batch_size=batch_size, shuffle=False)
 
 
 def load_partition(

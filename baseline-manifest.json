@@ -126,8 +126,8 @@
       "role": "data_preparation",
       "content_type": "text/x-python",
       "editable": true,
-      "size": 3719,
-      "sha256": "ec0f0b2353fa31bdeee03ee359f749e5692e32aa930fe5b78e7d28385def9f7e"
+      "size": 6022,
+      "sha256": "2b8b1d81346de013121ea9aa01db9b919a83ea3e475082ba94f173cbf95d9a68"
     },
     {
       "path": "fedops_silo_baseline/launcher_app.py",
@@ -152,6 +152,14 @@
       "editable": false,
       "size": 3656,
       "sha256": "9a0621b7c11dd172f6acfea4fddcf29063963fcc88d7da59c90823890d8f4919"
+    },
+    {
+      "path": "manifest.json",
+      "role": "tool_ai_manifest",
+      "content_type": "application/json",
+      "editable": true,
+      "size": 497,
+      "sha256": "d47b4d546c94649c657ca22427a6151b866043f877f23b638e6f3521230e853e"
     },
     {
       "path": "pyproject.toml",
@@ -222,8 +230,8 @@
       "role": "build_tool",
       "content_type": "text/x-python",
       "editable": false,
-      "size": 5883,
-      "sha256": "7bbec4fd3159622bf125c2384dc726c6623a70ad3306991d03bf17ffdea12931"
+      "size": 5988,
+      "sha256": "be326a4a7105d683d30f395ba8d4d60227c03bdd3cacb51485d5b4d25cb59b09"
     }
   ]
 }
