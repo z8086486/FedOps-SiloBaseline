@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
+import numpy as np
 import torch
 from torch.utils.data import DataLoader, TensorDataset, random_split
 from torchvision import datasets, transforms
@@ -33,42 +33,14 @@ def describe_input_features() -> Dict[str, Any]:
     }
 
 
-def mnist_transform():
-    return transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,)),
-    ])
-
-
 def preprocess(
-    dataset_path: str,
-    batch_size: int,
-) -> DataLoader:
-    """Prepare an MNIST JSON dataset for inference."""
-    with Path(dataset_path).open("r", encoding="utf-8") as file:
-        records = json.load(file)
-
-    if not isinstance(records, list) or not records:
-        raise ValueError("dataset must be a non-empty JSON array")
-
-    images = torch.tensor(
-        [record["image"] for record in records],
-        dtype=torch.float32,
+    sample: Dict[str, Any],
+) -> torch.Tensor:
+    """Convert one raw MNIST sample into a model-ready tensor."""
+    image = transforms.ToTensor()(
+        np.array(sample["image"], dtype=np.uint8, copy=True)
     )
-
-    if images.ndim == 3:
-        images = images.unsqueeze(1)
-
-    if tuple(images.shape[1:]) != (1, 28, 28):
-        raise ValueError("each image must have shape [28, 28]")
-
-    images = images.div(255.0).sub(0.5).div(0.5)
-
-    return DataLoader(
-        [{"inputs": image} for image in images],
-        batch_size=batch_size,
-        shuffle=False,
-    )
+    return transforms.Normalize((0.5,), (0.5,))(image)
 
 
 def load_partition(
@@ -91,7 +63,7 @@ def load_partition(
         root=str(Path(data_root)),
         train=True,
         download=True,
-        transform=mnist_transform(),
+        transform=lambda image: preprocess({"image": image}),
     )
     test_fraction = 0.2
     validation_size = max(1, int(validation_split * len(full_dataset)))

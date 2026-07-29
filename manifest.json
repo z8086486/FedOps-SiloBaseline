@@ -1,5 +1,5 @@
 {
-  "description": "Classifies 28x28 grayscale handwritten-digit images. The prepared dataset must be a UTF-8 JSON array whose items contain an image field with a 28x28 array of pixel values from 0 to 255.",
+  "description": "Classifies a 28x28 grayscale handwritten-digit image. A single input sample must contain an image feature with a 28x28 array of pixel values from 0 to 255.",
   "features": [
     "image"
   ],
