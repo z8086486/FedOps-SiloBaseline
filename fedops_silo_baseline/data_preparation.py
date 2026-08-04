@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
+import numpy as np
 import torch
 from torch.utils.data import DataLoader, TensorDataset, random_split
 from torchvision import datasets, transforms
@@ -32,11 +33,14 @@ def describe_input_features() -> Dict[str, Any]:
     }
 
 
-def mnist_transform():
-    return transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,)),
-    ])
+def preprocess(
+    sample: Dict[str, Any],
+) -> torch.Tensor:
+    """Convert one raw MNIST sample into a model-ready tensor."""
+    image = transforms.ToTensor()(
+        np.array(sample["image"], dtype=np.uint8, copy=True)
+    )
+    return transforms.Normalize((0.5,), (0.5,))(image)
 
 
 def load_partition(
@@ -59,7 +63,7 @@ def load_partition(
         root=str(Path(data_root)),
         train=True,
         download=True,
-        transform=mnist_transform(),
+        transform=lambda image: preprocess({"image": image}),
     )
     test_fraction = 0.2
     validation_size = max(1, int(validation_split * len(full_dataset)))
