@@ -2,8 +2,8 @@
   "schema_version": 1,
   "baseline": {
     "name": "fedops-silo-baseline",
-    "release_version": "0.1.0",
-    "template_revision": 3
+    "release_version": "0.2.0",
+    "template_revision": 1
   },
   "source": {
     "origin": "FedOps Federated Task baseline",
@@ -74,7 +74,7 @@
       "content_type": "text/markdown",
       "editable": true,
       "size": 3757,
-      "sha256": "fdac052fe13a99461110783b1343387864e81691763860b37442b53b18b7b357"
+      "sha256": "93948a06d8e582122123f9c62b4720227322ece33929b33f7f0f532a78d89962"
     },
     {
       "path": "fedops_silo_baseline/__init__.py",
@@ -82,7 +82,7 @@
       "content_type": "text/x-python",
       "editable": false,
       "size": 59,
-      "sha256": "7307cbae7d7532c0fd31014bebb26c8bf9f717ff2f2e8e9e2cddd2ec9ecffa7b"
+      "sha256": "3b0e4a64ef582042a4c6998ce2898f8db53f00d1d9a69023f66b520780a99e1b"
     },
     {
       "path": "fedops_silo_baseline/client_app.py",
@@ -170,7 +170,7 @@
       "content_type": "application/toml",
       "editable": false,
       "size": 1023,
-      "sha256": "bc0c75342e88891a03413ace1931fc0e1df0eeb8d1e58f71604674bb571fe1ca"
+      "sha256": "756547f4c1ff41622c40d006a154025f66079a148f8ef0660f561a4b32175b74"
     },
     {
       "path": "tests/test_config_contract.py",
@@ -202,7 +202,7 @@
       "content_type": "text/x-python",
       "editable": false,
       "size": 754,
-      "sha256": "f3cb6d104679248c872fa70b022f7d215f5075303594e3342f77c86a79095c6d"
+      "sha256": "5636495ac04ea445100744ae1953f4a9ffe84416af4c596041a84173952d6f68"
     },
     {
       "path": "tests/test_model_contract.py",
@@ -234,15 +234,15 @@
       "content_type": "text/x-python",
       "editable": false,
       "size": 5916,
-      "sha256": "0fbc706b8ce0a4a710040cc7233e323b70a5b7840d972c51075bebb5a6eaaf4d"
+      "sha256": "d562d624b376a1e359bbe57dadd2bba0b827da53cb7a9d77d91b7221413dcdec"
     },
     {
       "path": "uv.lock",
       "role": "dependency_lock",
       "content_type": "application/toml",
       "editable": false,
-      "size": 636875,
-      "sha256": "d22d6ca1854049bfc1f17c5884e05d2bebd94f9c550e325e3bb11af0bd0352a9"
+      "size": 639115,
+      "sha256": "52a9a4e7903a5a4a2cdbe8205c42e6cf871003ae27a2fead75e50c384f2e9431"
     }
   ]
 }

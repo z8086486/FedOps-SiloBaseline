@@ -101,7 +101,7 @@ FedOps-SiloBaseline/
 
 ## Baseline metadata
 
-- Baseline release: `0.1.0`
+- Baseline release: `0.2.0`
 - Template revision: `3`
 - Python: `>=3.10,<3.13`
 - FedOps participation package: `1.1.30.13`

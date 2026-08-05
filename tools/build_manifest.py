@@ -61,8 +61,8 @@ def build_manifest() -> Dict[str, object]:
         "schema_version": 1,
         "baseline": {
             "name": "fedops-silo-baseline",
-            "release_version": "0.1.0",
-            "template_revision": 3,
+            "release_version": "0.2.0",
+            "template_revision": 1,
         },
         "source": {
             "origin": "FedOps Federated Task baseline",
