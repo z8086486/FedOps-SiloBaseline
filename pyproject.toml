@@ -10,7 +10,6 @@ readme = "README.md"
 requires-python = ">=3.10,<3.13"
 license = "Apache-2.0"
 dependencies = [
-    "flwr[simulation]==1.26.1",
     "numpy==1.26.4",
     "torch==2.8.0",
     "torchvision==0.23.0",
@@ -20,29 +19,22 @@ dependencies = [
 [project.optional-dependencies]
 participate = [
     "fedops==1.1.30.13",
+    "fastapi==0.116.1",
     "omegaconf==2.3.0",
+    "requests==2.32.4",
+    "uvicorn==0.35.0",
 ]
 
 [project.scripts]
-fedops-baseline-validate = "fedops_silo_baseline.validation:main"
+fedops-task = "fedops_silo_baseline.launcher_app:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["fedops_silo_baseline"]
 
-[tool.flwr.app]
-publisher = "gfedops"
-
-[tool.flwr.app.components]
-serverapp = "fedops_silo_baseline.launcher_app:app"
-clientapp = "fedops_silo_baseline.client_app:app"
-
-[tool.flwr.app.config]
-mode = "validate"
-task_id = "task_id"
-runtime_key = "task_id"
-validation_samples = 32
-validation_batches = 2
-manager_port = 8004
-manager_startup_timeout = 30
-server_manager_url = "http://ccl.gachon.ac.kr:40019"
-fl_server_host = "ccl.gachon.ac.kr"
+[tool.fedops.task]
+schema-version = 1
+task-type = "silo"
+runtime-module = "fedops_silo_baseline.launcher_app"
+model-file = "fedops_silo_baseline/model.py"
+data-preparation-file = "fedops_silo_baseline/data_preparation.py"
+config-file = "fedops_silo_baseline/conf/config.toml"

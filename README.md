@@ -1,111 +1,93 @@
 # FedOps Silo Baseline
 
-FedOps Silo Baseline is an owner starter project for defining the model and
-local-data contract of a FedOps Task. It is based on the structure of
-[`@gfedops/fedops-mnist:0.0.3`](https://flower.ai/apps/gfedops/fedops-mnist/)
-and is designed to run inside FedOps-Launcher.
+FedOps Silo Baseline은 FedOps Agent Studio에서 새 Federated Task를 만들 때 사용하는
+기본 프로젝트입니다. Task Owner는 모델과 로컬 데이터 계약을 수정하고, Agent Studio의
+uv Python 환경에서 검증한 뒤 FedOps Registry workflow로 연결할 수 있습니다.
 
-The default example uses MNIST and PyTorch. It has two explicit modes:
+공개 실행 계약은 `fedops-task` 하나이며 두 action을 제공합니다.
 
-- `validate`: verify the project locally without connecting to a FedOps server.
-- `participate`: start the FedOps local client and communication manager for a
-  real Task.
+- `validate`: FedOps 서버에 연결하지 않고 모델·입력 feature·학습 코드를 로컬 검증
+- `participate`: 승인된 Task ID와 runtime key로 FedOps 연합학습에 참여
 
-`validate` is the default. Creating or opening the project never starts
-federated participation by itself.
+프로젝트를 생성하거나 여는 것만으로 연합학습이 시작되지는 않습니다.
 
 ## Owner editing guide
 
-Task owners normally edit these files:
-
 | File | Purpose |
 | --- | --- |
-| `fedops_silo_baseline/model.py` | Model, local training, and evaluation |
-| `fedops_silo_baseline/data_preparation.py` | Input-feature and local-data contract |
-| `fedops_silo_baseline/conf/config.toml` | Public training defaults |
-| `README.md` | Task-specific description and usage |
+| `fedops_silo_baseline/model.py` | 모델 정의, 로컬 학습, 평가 |
+| `fedops_silo_baseline/data_preparation.py` | 입력 feature와 로컬 데이터 전처리 계약 |
+| `fedops_silo_baseline/conf/config.toml` | Task 학습 기본 설정 |
+| `README.md` | Task 설명과 사용법 |
 
-The remaining Python files are runtime adapters used by Flower and FedOps.
+`launcher_app.py`, `client_app.py`, `client_main.py`, `client_manager_main.py`는 Agent Studio와 FedOps
+참여 workflow를 연결하는 runtime adapter입니다.
 
 ## Requirements
 
-- Python 3.10, 3.11, or 3.12
-- CPU is sufficient for validation
-- Network access is required only when downloading MNIST or participating in a
-  real Task
+- Python 3.10, 3.11, 3.12
+- uv
+- 로컬 검증은 CPU만으로 가능
+- 공개 MNIST 다운로드 또는 실제 Task 참여 시에만 네트워크 필요
 
 ## Install and validate
 
-Create an isolated environment and install the base project:
-
 ```bash
-python -m venv .venv
-. .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -e .
+uv sync
+uv run --locked --no-sync fedops-task validate
 ```
 
-Run the direct validator:
-
-```bash
-fedops-baseline-validate
-```
-
-Run the same validation through Flower:
-
-```bash
-flwr run .
-```
-
-Validation uses deterministic synthetic MNIST-shaped samples. It checks the
-input contract, model output shape, one short local training pass, and
-evaluation without downloading data or contacting a FedOps service.
+검증은 deterministic synthetic MNIST-shaped sample을 사용합니다. 입력 계약, 모델 출력
+shape, 짧은 로컬 학습, 평가를 확인하며 FedOps 서비스에 데이터를 보내지 않습니다.
 
 ## Participate in a FedOps Task
 
-Install the participation dependencies:
+참여 dependency를 동기화합니다.
 
 ```bash
-python -m pip install -e ".[participate]"
+uv sync --extra participate
 ```
 
-Then run with the stable Task identifier and its FedOps runtime key:
+Agent Studio가 승인된 Task 정보로 다음 계약을 호출합니다.
 
 ```bash
-flwr run . --run-config \
-  'mode="participate" task_id="<TASK_OBJECT_ID>" runtime_key="<RUNTIME_KEY>"'
+uv run --locked --no-sync fedops-task participate \
+  --task-id "<TASK_OBJECT_ID>" \
+  --runtime-key "<RUNTIME_KEY>"
 ```
 
-Connection values can be overridden without changing Python code:
+연결 주소가 Task 응답으로 제공된 경우 CLI option으로 덮어쓸 수 있습니다.
 
 ```bash
-flwr run . --run-config \
-  'mode="participate" task_id="<TASK_OBJECT_ID>" runtime_key="<RUNTIME_KEY>" server_manager_url="http://HOST:PORT"'
+uv run --locked --no-sync fedops-task participate \
+  --task-id "<TASK_OBJECT_ID>" \
+  --runtime-key "<RUNTIME_KEY>" \
+  --server-manager-url "http://HOST:PORT" \
+  --federated-server-host "HOST"
 ```
 
-`task_id` is the stable database identifier. `runtime_key` is the existing
-FedOps server, S3, and Kubernetes lookup key and must not be replaced with the
-Task display name in Launcher code. FedOps-Launcher supplies both values and
-the connection configuration in the integrated workflow.
+`task_id`는 안정적인 데이터베이스 식별자이고 `runtime_key`는 현재 FedOps 서버, S3,
+Kubernetes resource lookup에 사용되는 값입니다. 화면의 Task display name으로 대체하면
+안 됩니다.
 
 ## Data boundary
 
-- Raw local records remain on the participant device.
-- Validation does not upload model parameters or data.
-- The default MNIST loader downloads public MNIST data only in participation
-  mode.
-- Do not place credentials, private Task YAML, or Kubernetes information in
-  this project.
+- 원본 로컬 데이터는 참여자 장치에 남습니다.
+- 로컬 검증은 데이터나 모델 parameter를 업로드하지 않습니다.
+- 기본 MNIST loader는 참여 action에서만 공개 MNIST 데이터를 다운로드합니다.
+- credential, private Task YAML, Kubernetes 정보는 프로젝트 파일에 저장하지 않습니다.
 
 ## Project structure
 
 ```text
 FedOps-SiloBaseline/
 ├── baseline-manifest.json
+├── manifest.json
 ├── pyproject.toml
+├── uv.lock
 ├── fedops_silo_baseline/
-│   ├── client_app.py
 │   ├── launcher_app.py
+│   ├── client_app.py
 │   ├── client_main.py
 │   ├── client_manager_main.py
 │   ├── model.py
@@ -113,17 +95,17 @@ FedOps-SiloBaseline/
 │   ├── validation.py
 │   └── conf/config.toml
 ├── tests/
-└── tools/build_manifest.py
+├── tools/build_manifest.py
+└── .gitignore
 ```
 
-## Baseline provenance
+## Baseline metadata
 
 - Baseline release: `0.1.0`
-- Template revision: `2`
-- Flower compatibility target: `1.26.1`
+- Template revision: `3`
+- Python: `>=3.10,<3.13`
 - FedOps participation package: `1.1.30.13`
-- Reference App: `@gfedops/fedops-mnist:0.0.3`
+- Task contract: `[tool.fedops.task]`, schema version `1`
 
-The reference App is Apache-2.0 licensed. This project keeps that provenance in
-`baseline-manifest.json` and contains a restructured implementation intended
-for the FedOps Task Hub workflow.
+`baseline-manifest.json`은 Files & versions 업로드 및 무결성 확인을 위한 파일 목록과
+checksum을 제공합니다.

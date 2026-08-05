@@ -13,10 +13,11 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = ROOT / "baseline-manifest.json"
 
 FILE_METADATA: Dict[str, Dict[str, object]] = {
+    ".gitignore": {"role": "source_policy", "content_type": "text/plain", "editable": False},
     "LICENSE": {"role": "license", "content_type": "text/plain", "editable": False},
     "README.md": {"role": "documentation", "content_type": "text/markdown", "editable": True},
     "manifest.json": {"role": "tool_ai_manifest", "content_type": "application/json", "editable": True},
-    "pyproject.toml": {"role": "flower_config", "content_type": "application/toml", "editable": False},
+    "pyproject.toml": {"role": "task_definition", "content_type": "application/toml", "editable": False},
     "fedops_silo_baseline/__init__.py": {"role": "runtime", "content_type": "text/x-python", "editable": False},
     "fedops_silo_baseline/client_app.py": {"role": "runtime", "content_type": "text/x-python", "editable": False},
     "fedops_silo_baseline/config.py": {"role": "runtime", "content_type": "text/x-python", "editable": False},
@@ -35,6 +36,7 @@ FILE_METADATA: Dict[str, Dict[str, object]] = {
     "tests/test_manifest.py": {"role": "test", "content_type": "text/x-python", "editable": False},
     "tools/__init__.py": {"role": "build_tool", "content_type": "text/x-python", "editable": False},
     "tools/build_manifest.py": {"role": "build_tool", "content_type": "text/x-python", "editable": False},
+    "uv.lock": {"role": "dependency_lock", "content_type": "application/toml", "editable": False},
 }
 
 
@@ -60,45 +62,40 @@ def build_manifest() -> Dict[str, object]:
         "baseline": {
             "name": "fedops-silo-baseline",
             "release_version": "0.1.0",
-            "template_revision": 2,
+            "template_revision": 3,
         },
         "source": {
-            "reference_app": "@gfedops/fedops-mnist",
-            "reference_version": "0.0.3",
-            "reference_url": "https://flower.ai/apps/gfedops/fedops-mnist/",
+            "origin": "FedOps Federated Task baseline",
             "license": "Apache-2.0",
         },
         "compatibility": {
             "python": ">=3.10,<3.13",
-            "flower": "==1.26.1",
             "fedops_participation": "==1.1.30.13",
-            "launcher": ">=1.0.0",
+            "agent_studio_task_schema": 1,
         },
         "entrypoints": {
-            "flower_serverapp": "fedops_silo_baseline.launcher_app:app",
-            "flower_clientapp": "fedops_silo_baseline.client_app:app",
-            "validation_cli": "fedops-baseline-validate",
+            "task_cli": "fedops-task",
+            "task_runtime": "fedops_silo_baseline.launcher_app:main",
         },
         "run_modes": {
             "default": "validate",
             "allowed": ["validate", "participate"],
             "participate_requires": ["task_id", "runtime_key", "participate extra"],
             "public_run_config_keys": [
-                "mode",
                 "task_id",
                 "runtime_key",
-                "validation_samples",
-                "validation_batches",
+                "samples",
+                "max_batches",
                 "manager_port",
                 "manager_startup_timeout",
                 "server_manager_url",
-                "fl_server_host",
+                "federated_server_host",
             ],
         },
         "task_binding": {
             "stable_identifier_key": "task_id",
             "runtime_identifier_key": "runtime_key",
-            "identifier_source": "FedOps-Launcher authorized Task API",
+            "identifier_source": "FedOps Agent Studio authorized Task API",
             "display_name_is_identifier": False,
         },
         "data_boundary": {

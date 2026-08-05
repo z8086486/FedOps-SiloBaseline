@@ -30,5 +30,5 @@ min_evaluate_clients = 1
 
 [runtime]
 server_manager_url = "http://ccl.gachon.ac.kr:40019"
-fl_server_host = "ccl.gachon.ac.kr"
+federated_server_host = "ccl.gachon.ac.kr"
 manager_port = 8004

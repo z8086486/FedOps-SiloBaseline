@@ -13,7 +13,7 @@ class ManifestTest(unittest.TestCase):
             (ROOT / "baseline-manifest.json").read_text(encoding="utf-8")
         )
         self.assertEqual(manifest["baseline"]["release_version"], "0.1.0")
-        self.assertEqual(manifest["baseline"]["template_revision"], 2)
+        self.assertEqual(manifest["baseline"]["template_revision"], 3)
         for entry in manifest["files"]:
             content = (ROOT / entry["path"]).read_bytes()
             self.assertEqual(hashlib.sha256(content).hexdigest(), entry["sha256"])

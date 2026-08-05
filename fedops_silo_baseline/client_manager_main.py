@@ -139,7 +139,7 @@ async def _training_loop() -> None:
                     f"{_client_base_url()}/start",
                     json={
                         "server_ip": os.environ.get(
-                            "FEDOPS_FL_SERVER_HOST",
+                            "FEDOPS_SERVER_HOST",
                             "ccl.gachon.ac.kr",
                         ),
                         "client_mac": STATE.client_mac,

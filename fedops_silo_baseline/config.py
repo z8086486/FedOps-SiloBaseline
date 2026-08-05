@@ -65,6 +65,6 @@ def validate_config(config: Dict[str, Any]) -> None:
     runtime = config.get("runtime")
     if not isinstance(runtime, dict):
         raise ValueError("config.toml: runtime section is required")
-    for key in ("server_manager_url", "fl_server_host"):
+    for key in ("server_manager_url", "federated_server_host"):
         if not isinstance(runtime.get(key), str) or not runtime[key].strip():
             raise ValueError(f"config.toml: runtime.{key} must be a non-empty string")

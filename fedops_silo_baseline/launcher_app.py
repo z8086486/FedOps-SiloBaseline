@@ -1,23 +1,25 @@
-"""Flower ServerApp entrypoint for validation and FedOps participation."""
+"""Command-line launcher for a FedOps Federated Task.
+
+This module is the stable boundary used by FedOps Agent Studio. It validates an
+owner-edited Task locally or starts the FedOps participation processes. It does
+not expose a third-party application runtime as the Task contract.
+"""
 
 from __future__ import annotations
 
+import argparse
+import json
 import os
 import subprocess
 import sys
 import time
 import urllib.error
 import urllib.request
-from typing import Any, Mapping, Optional
-
-from flwr.app import Context
-from flwr.serverapp import Grid, ServerApp
+from pathlib import Path
+from typing import Any, Mapping, Optional, Sequence
 
 from .config import load_config
 from .validation import validate_baseline
-
-
-app = ServerApp()
 
 
 def _read_str(config: Mapping[str, Any], key: str, default: str) -> str:
@@ -37,12 +39,12 @@ def _terminate_process(
 ) -> None:
     if process.poll() is not None:
         return
-    print(f"[fedops-baseline] stopping {name} (pid={process.pid})", flush=True)
+    print(f"[fedops-task] stopping {name} (pid={process.pid})", flush=True)
     process.terminate()
     try:
         process.wait(timeout=timeout_seconds)
     except subprocess.TimeoutExpired:
-        print(f"[fedops-baseline] force-killing {name} (pid={process.pid})", flush=True)
+        print(f"[fedops-task] force-killing {name} (pid={process.pid})", flush=True)
         process.kill()
         process.wait(timeout=5.0)
 
@@ -74,26 +76,22 @@ def _run_participation(run_config: Mapping[str, Any]) -> None:
     task_id = _read_str(run_config, "task_id", config["task_id"]).strip()
     if not task_id or task_id == "task_id":
         raise ValueError("participate mode requires a real task_id")
-    runtime_key = _read_str(
-        run_config,
-        "runtime_key",
-        config["runtime_key"],
-    ).strip()
+    runtime_key = _read_str(run_config, "runtime_key", config["runtime_key"]).strip()
     if not runtime_key or runtime_key == "task_id":
         raise ValueError("participate mode requires a real runtime_key")
 
     runtime = config["runtime"]
-    manager_port = _read_int(run_config, "manager_port", 8004)
+    manager_port = _read_int(run_config, "manager_port", int(runtime["manager_port"]))
     startup_timeout = _read_int(run_config, "manager_startup_timeout", 30)
     server_manager_url = _read_str(
         run_config,
         "server_manager_url",
         runtime["server_manager_url"],
     )
-    fl_server_host = _read_str(
+    federated_server_host = _read_str(
         run_config,
-        "fl_server_host",
-        runtime["fl_server_host"],
+        "federated_server_host",
+        runtime["federated_server_host"],
     )
 
     process_env = os.environ.copy()
@@ -102,21 +100,13 @@ def _run_participation(run_config: Mapping[str, Any]) -> None:
         "FEDOPS_TASK_ID": runtime_key,
         "FEDOPS_MANAGER_PORT": str(manager_port),
         "FEDOPS_SERVER_MANAGER_URL": server_manager_url.rstrip("/"),
-        "FEDOPS_FL_SERVER_HOST": fl_server_host,
+        "FEDOPS_SERVER_HOST": federated_server_host,
     })
-    manager_command = [
-        sys.executable,
-        "-m",
-        "fedops_silo_baseline.client_manager_main",
-    ]
-    client_command = [
-        sys.executable,
-        "-m",
-        "fedops_silo_baseline.client_main",
-    ]
+    manager_command = [sys.executable, "-m", "fedops_silo_baseline.client_manager_main"]
+    client_command = [sys.executable, "-m", "fedops_silo_baseline.client_app"]
 
     print(
-        "[fedops-baseline] mode=participate "
+        "[fedops-task] mode=participate "
         f"task_id={task_id} runtime_key={runtime_key}",
         flush=True,
     )
@@ -134,36 +124,59 @@ def _run_participation(run_config: Mapping[str, Any]) -> None:
                 )
             if client_code is not None:
                 if client_code == 0:
-                    print("[fedops-baseline] client completed", flush=True)
+                    print("[fedops-task] client completed", flush=True)
                     return
                 raise RuntimeError(f"FedOps client exited with code {client_code}")
             time.sleep(0.5)
     except KeyboardInterrupt:
-        print("[fedops-baseline] participation interrupted", flush=True)
+        print("[fedops-task] participation interrupted", flush=True)
     finally:
         if client_process is not None:
             _terminate_process(client_process, "FedOps client")
         _terminate_process(manager_process, "communication manager")
 
 
-@app.main()
-def main(grid: Grid, context: Context) -> None:
-    del grid
-    run_config = context.run_config
-    mode = _read_str(run_config, "mode", "validate").strip().lower()
-    if mode == "validate":
-        result = validate_baseline(
-            sample_count=_read_int(run_config, "validation_samples", 32),
-            max_batches=_read_int(run_config, "validation_batches", 2),
-        )
-        print(
-            "[fedops-baseline] validation passed "
-            f"(model={result['model']}, samples={result['samples']}, "
-            f"train_loss={result['train_loss']:.6f})",
-            flush=True,
-        )
-        return
-    if mode == "participate":
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Run a FedOps Federated Task")
+    actions = parser.add_subparsers(dest="action", required=True)
+
+    validate = actions.add_parser("validate", help="Validate model and data contracts locally")
+    validate.add_argument("--config", type=Path)
+    validate.add_argument("--samples", type=int, default=32)
+    validate.add_argument("--max-batches", type=int, default=2)
+
+    participate = actions.add_parser("participate", help="Participate in an authorized FedOps Task")
+    participate.add_argument("--task-id", required=True)
+    participate.add_argument("--runtime-key", required=True)
+    participate.add_argument("--manager-port", type=int)
+    participate.add_argument("--manager-startup-timeout", type=int)
+    participate.add_argument("--server-manager-url")
+    participate.add_argument("--federated-server-host")
+    return parser
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    args = build_parser().parse_args(argv)
+    try:
+        if args.action == "validate":
+            result = validate_baseline(
+                config_path=args.config,
+                sample_count=args.samples,
+                max_batches=args.max_batches,
+            )
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 0
+        run_config = {
+            key: value
+            for key, value in vars(args).items()
+            if key != "action" and value is not None
+        }
         _run_participation(run_config)
-        return
-    raise ValueError(f"Unsupported mode {mode!r}; use 'validate' or 'participate'")
+        return 0
+    except Exception as error:
+        print(json.dumps({"ok": False, "error": str(error)}, ensure_ascii=False))
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

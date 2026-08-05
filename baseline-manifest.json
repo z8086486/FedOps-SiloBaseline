@@ -3,24 +3,20 @@
   "baseline": {
     "name": "fedops-silo-baseline",
     "release_version": "0.1.0",
-    "template_revision": 2
+    "template_revision": 3
   },
   "source": {
-    "reference_app": "@gfedops/fedops-mnist",
-    "reference_version": "0.0.3",
-    "reference_url": "https://flower.ai/apps/gfedops/fedops-mnist/",
+    "origin": "FedOps Federated Task baseline",
     "license": "Apache-2.0"
   },
   "compatibility": {
     "python": ">=3.10,<3.13",
-    "flower": "==1.26.1",
     "fedops_participation": "==1.1.30.13",
-    "launcher": ">=1.0.0"
+    "agent_studio_task_schema": 1
   },
   "entrypoints": {
-    "flower_serverapp": "fedops_silo_baseline.launcher_app:app",
-    "flower_clientapp": "fedops_silo_baseline.client_app:app",
-    "validation_cli": "fedops-baseline-validate"
+    "task_cli": "fedops-task",
+    "task_runtime": "fedops_silo_baseline.launcher_app:main"
   },
   "run_modes": {
     "default": "validate",
@@ -34,21 +30,20 @@
       "participate extra"
     ],
     "public_run_config_keys": [
-      "mode",
       "task_id",
       "runtime_key",
-      "validation_samples",
-      "validation_batches",
+      "samples",
+      "max_batches",
       "manager_port",
       "manager_startup_timeout",
       "server_manager_url",
-      "fl_server_host"
+      "federated_server_host"
     ]
   },
   "task_binding": {
     "stable_identifier_key": "task_id",
     "runtime_identifier_key": "runtime_key",
-    "identifier_source": "FedOps-Launcher authorized Task API",
+    "identifier_source": "FedOps Agent Studio authorized Task API",
     "display_name_is_identifier": false
   },
   "data_boundary": {
@@ -57,6 +52,14 @@
   },
   "manifest_checksum_policy": "baseline-manifest.json is excluded to avoid a self-referential checksum",
   "files": [
+    {
+      "path": ".gitignore",
+      "role": "source_policy",
+      "content_type": "text/plain",
+      "editable": false,
+      "size": 4655,
+      "sha256": "af0ea3d177986ee49b939ef52a7cab850b6e61d85ebdc6dcf5c0d85227c76f98"
+    },
     {
       "path": "LICENSE",
       "role": "license",
@@ -70,8 +73,8 @@
       "role": "documentation",
       "content_type": "text/markdown",
       "editable": true,
-      "size": 3820,
-      "sha256": "49a9bb648e963692c7eeaccf98283b6342111928a5448d8a200625d97f076faf"
+      "size": 3757,
+      "sha256": "fdac052fe13a99461110783b1343387864e81691763860b37442b53b18b7b357"
     },
     {
       "path": "fedops_silo_baseline/__init__.py",
@@ -86,8 +89,8 @@
       "role": "runtime",
       "content_type": "text/x-python",
       "editable": false,
-      "size": 251,
-      "sha256": "623581f06d733020ee3d438b165d6e050be336088ce037677ffd8d459d9ad37e"
+      "size": 287,
+      "sha256": "23167a474f9acbc466b5101b997e2e28fb828eaf2eaf4456e720a52150c34f3f"
     },
     {
       "path": "fedops_silo_baseline/client_main.py",
@@ -102,40 +105,40 @@
       "role": "runtime",
       "content_type": "text/x-python",
       "editable": false,
-      "size": 6370,
-      "sha256": "7a123818b5c5a914c85f4aa75c80714e70d795ff1861530b54106ff397db43df"
+      "size": 6367,
+      "sha256": "7e79571a0b43309ba5b94361eb49bc068a9afe92f574be79348b693fa8f2fdc4"
     },
     {
       "path": "fedops_silo_baseline/conf/config.toml",
       "role": "task_config",
       "content_type": "application/toml",
       "editable": true,
-      "size": 593,
-      "sha256": "667a1b5ce1c60e10ed10e49f55009a544c278808b42e9acbfb5c5b2ce601b5a5"
+      "size": 600,
+      "sha256": "02607caf0af5f86ef046ffea8b16c4ba23ae3304d28944db58f12d11a573292a"
     },
     {
       "path": "fedops_silo_baseline/config.py",
       "role": "runtime",
       "content_type": "text/x-python",
       "editable": false,
-      "size": 2683,
-      "sha256": "067403ff1b032a4aa63b2af0926fdf5d646ade7a45cdc1935691b25405175ac3"
+      "size": 2690,
+      "sha256": "29adb58767e29b239d5e17b9b5ff768909e53a166ead0b55d53fcfbb5e86beff"
     },
     {
       "path": "fedops_silo_baseline/data_preparation.py",
       "role": "data_preparation",
       "content_type": "text/x-python",
       "editable": true,
-      "size": 4021,
-      "sha256": "c8d2842a278d5a92792805749fcda601cc5e786345c6a79983cc017e2c7aff65"
+      "size": 3910,
+      "sha256": "5c1dd852319a8bc2f98a318fc52034682b25ca8f1521a60a294b44e31dc03803"
     },
     {
       "path": "fedops_silo_baseline/launcher_app.py",
       "role": "runtime",
       "content_type": "text/x-python",
       "editable": false,
-      "size": 5595,
-      "sha256": "60be54817e06340cee00f1979a41aef5ad95c1249e2e56c6d8b8609792a365e0"
+      "size": 6663,
+      "sha256": "5d47cd2d9f9508598a992367b176039cab26380c9a8311d354fddce9d8c219ba"
     },
     {
       "path": "fedops_silo_baseline/model.py",
@@ -158,16 +161,16 @@
       "role": "tool_ai_manifest",
       "content_type": "application/json",
       "editable": true,
-      "size": 488,
-      "sha256": "8b2705c856a7bbaac49a22ab454f47d5bf9cb3748a37ea5432386fca13ff9bc3"
+      "size": 467,
+      "sha256": "87a94347ff1432a850691ba39424f214789aeff45f6126314ff4cd2fe7277073"
     },
     {
       "path": "pyproject.toml",
-      "role": "flower_config",
+      "role": "task_definition",
       "content_type": "application/toml",
       "editable": false,
-      "size": 1158,
-      "sha256": "c8e3d58094d34bfe95dfb5eecd6a9cbd8aa104fe3991e21c30153b0a9b6ed7bc"
+      "size": 1023,
+      "sha256": "bc0c75342e88891a03413ace1931fc0e1df0eeb8d1e58f71604674bb571fe1ca"
     },
     {
       "path": "tests/test_config_contract.py",
@@ -190,8 +193,8 @@
       "role": "test",
       "content_type": "text/x-python",
       "editable": false,
-      "size": 2090,
-      "sha256": "098739dfcb1f984361c0986a403e4579e0bec5ea18af7e7cbeb944ae231a7521"
+      "size": 2440,
+      "sha256": "74394101a0ac801eb518b017be9d54884973b39676155dd0bbf78fe72a64976f"
     },
     {
       "path": "tests/test_manifest.py",
@@ -199,7 +202,7 @@
       "content_type": "text/x-python",
       "editable": false,
       "size": 754,
-      "sha256": "791043144c999ce2136fefae9c3fa2e25daac538d583c4a85e322957035aee40"
+      "sha256": "f3cb6d104679248c872fa70b022f7d215f5075303594e3342f77c86a79095c6d"
     },
     {
       "path": "tests/test_model_contract.py",
@@ -230,8 +233,16 @@
       "role": "build_tool",
       "content_type": "text/x-python",
       "editable": false,
-      "size": 5988,
-      "sha256": "be326a4a7105d683d30f395ba8d4d60227c03bdd3cacb51485d5b4d25cb59b09"
+      "size": 5916,
+      "sha256": "0fbc706b8ce0a4a710040cc7233e323b70a5b7840d972c51075bebb5a6eaaf4d"
+    },
+    {
+      "path": "uv.lock",
+      "role": "dependency_lock",
+      "content_type": "application/toml",
+      "editable": false,
+      "size": 636875,
+      "sha256": "d22d6ca1854049bfc1f17c5884e05d2bebd94f9c550e325e3bb11af0bd0352a9"
     }
   ]
 }

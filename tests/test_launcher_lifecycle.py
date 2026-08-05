@@ -1,11 +1,13 @@
 import subprocess
 import unittest
+from unittest.mock import patch
 
 from fedops_silo_baseline.launcher_app import (
     _read_int,
     _read_str,
     _run_participation,
     _terminate_process,
+    main,
 )
 
 
@@ -35,7 +37,7 @@ class FakeProcess:
 
 
 class LauncherLifecycleTest(unittest.TestCase):
-    def test_run_config_readers_apply_defaults_and_convert_values(self):
+    def test_config_readers_apply_defaults_and_convert_values(self):
         self.assertEqual(_read_str({}, "mode", "validate"), "validate")
         self.assertEqual(_read_str({"mode": "participate"}, "mode", "validate"), "participate")
         self.assertEqual(_read_int({}, "manager_port", 8004), 8004)
@@ -58,6 +60,12 @@ class LauncherLifecycleTest(unittest.TestCase):
         already_stopped = FakeProcess(exit_code=0)
         _terminate_process(already_stopped, "test process")
         self.assertFalse(already_stopped.terminated)
+
+    @patch("fedops_silo_baseline.launcher_app.validate_baseline")
+    def test_validate_cli_uses_fedops_task_contract(self, validate_baseline):
+        validate_baseline.return_value = {"ok": True}
+        self.assertEqual(main(["validate", "--samples", "4"]), 0)
+        validate_baseline.assert_called_once()
 
 
 if __name__ == "__main__":

@@ -1,10 +1,14 @@
-"""Flower ClientApp placeholder.
+"""FedOps federated-client application entrypoint.
 
-FedOps participation is launched by ``launcher_app`` as two local processes.
-The ClientApp remains present so the project is a complete Flower App bundle.
+The filename is part of the Silo Baseline contract.  Runtime integration is
+provided by FedOps instead of exposing a Flower ``ClientApp``.
 """
 
-from flwr.clientapp import ClientApp
+from .client_main import main
 
 
-app = ClientApp()
+__all__ = ["main"]
+
+
+if __name__ == "__main__":
+    main()
