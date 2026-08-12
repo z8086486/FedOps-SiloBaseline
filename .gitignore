@@ -220,3 +220,6 @@ __marimo__/
 dataset/
 artifacts/
 logs/
+model_release/*.safetensors
+federated-task-baseline/model_release/*.safetensors
+.fedops-studio/

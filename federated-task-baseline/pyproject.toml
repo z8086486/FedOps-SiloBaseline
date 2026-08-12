@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fedops-federated-task"
+version = "0.3.0"
+description = "FedOps Federated Task starter for local training, readiness, and participation"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = "Apache-2.0"
+dependencies = [
+    "numpy==1.26.4",
+    "packaging==25.0",
+    "safetensors==0.6.2",
+    "torch==2.8.0",
+    "torchvision==0.23.0",
+    "tomli==2.2.1; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+participate = [
+    "fedops==1.1.30.13",
+    "fastapi==0.116.1",
+    "omegaconf==2.3.0",
+    "requests==2.32.4",
+    "uvicorn==0.35.0",
+]
+
+[project.scripts]
+fedops-task = "federated_task.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["federated_task"]
+
+[tool.hatch.build]
+include = [
+    "federated_task/**/*.py",
+    "federated_task/**/*.json",
+    "federated_task/config.toml",
+]
+
+[tool.fedops.task]
+schema-version = 2
+task-type = "silo"
+runtime-module = "federated_task.main"
+model-file = "federated_task/local_training/model.py"
+data-preparation-file = "federated_task/local_training/data_preparation.py"
+config-file = "federated_task/config.toml"
+readiness-module = "federated_task.task_readiness.check"
+model-release-manifest = "model_release/manifest.json"
+tool-manifest = "federated_task/agent_tool/manifest.json"

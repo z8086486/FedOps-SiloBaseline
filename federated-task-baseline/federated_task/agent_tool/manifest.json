@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "name": "mnist-classifier",
+  "description": "Classify one 28x28 grayscale handwritten digit image.",
+  "entrypoint": "federated_task.agent_tool.inference:predict",
+  "modelFormat": "safetensors",
+  "input": {
+    "type": "object",
+    "required": ["image"],
+    "properties": {
+      "image": {
+        "type": "array",
+        "description": "28 rows of 28 integer pixel values from 0 to 255"
+      }
+    }
+  },
+  "output": {
+    "type": "object",
+    "required": ["label", "confidence"],
+    "properties": {
+      "label": {"type": "integer", "minimum": 0, "maximum": 9},
+      "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+    }
+  }
+}

@@ -1,1 +1,1 @@
-"""Build utilities for the Baseline release."""
+"""Maintainer-only Baseline release tools."""

@@ -1,4 +1,4 @@
-"""Communication manager used by FedOps participation mode."""
+"""Communication manager for an authorized FedOps participation run."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import os
 import socket
 import uuid
 from contextlib import suppress
-from typing import Any, Dict, Optional
+from typing import Any
 
 import requests
 import uvicorn
@@ -26,11 +26,11 @@ def _mac_address() -> str:
 
 
 class FLTask(BaseModel):
-    FL_task_ID: Optional[str] = None
-    Device_mac: Optional[str] = None
-    Device_hostname: Optional[str] = None
-    Device_online: Optional[bool] = None
-    Device_training: Optional[bool] = None
+    FL_task_ID: str | None = None
+    Device_mac: str | None = None
+    Device_hostname: str | None = None
+    Device_online: bool | None = None
+    Device_training: bool | None = None
 
 
 class ManagerState(BaseModel):
@@ -39,20 +39,24 @@ class ManagerState(BaseModel):
     fl_ready: bool = False
     global_model_version: int = 0
     task_id: str = ""
-    task_status: Optional[FLTask] = None
+    task_status: FLTask | None = None
     client_mac: str = _mac_address()
     client_name: str = socket.gethostname()
 
 
-STATE = ManagerState(task_id=os.environ.get("FEDOPS_TASK_ID", ""))
-BACKGROUND_TASKS = []
+STATE = ManagerState(task_id=os.environ.get("FEDOPS_RUNTIME_KEY", ""))
+BACKGROUND_TASKS: list[asyncio.Task] = []
+
+
+def _required_url(name: str) -> str:
+    value = os.environ.get(name, "").strip().rstrip("/")
+    if not value:
+        raise RuntimeError(f"{name} is required")
+    return value
 
 
 def _manager_base_url() -> str:
-    return os.environ.get(
-        "FEDOPS_SERVER_MANAGER_URL",
-        "http://ccl.gachon.ac.kr:40019",
-    ).rstrip("/")
+    return _required_url("FEDOPS_SERVER_MANAGER_URL")
 
 
 def _client_base_url() -> str:
@@ -82,21 +86,15 @@ async def _client_presence_loop() -> None:
                 STATE.task_id = str(payload.get("task_id") or STATE.task_id)
             else:
                 STATE.client_online = False
-
             if STATE.task_id:
-                registration: Dict[str, Any] = {
+                registration: dict[str, Any] = {
                     "FL_task_ID": STATE.task_id,
                     "Device_mac": STATE.client_mac,
                     "Device_hostname": STATE.client_name,
                     "Device_online": STATE.client_online,
                     "Device_training": STATE.client_training,
                 }
-                await _to_thread(
-                    _request,
-                    "PUT",
-                    _server_url("RegisterFLTask"),
-                    json=registration,
-                )
+                await _to_thread(_request, "PUT", _server_url("RegisterFLTask"), json=registration)
         except Exception as error:
             STATE.client_online = False
             LOGGER.info("FedOps client presence unavailable: %s", error)
@@ -126,22 +124,13 @@ async def _server_status_loop() -> None:
 async def _training_loop() -> None:
     while True:
         try:
-            should_start = (
-                STATE.task_status is not None
-                and STATE.client_online
-                and not STATE.client_training
-                and STATE.fl_ready
-            )
-            if should_start:
+            if STATE.task_status and STATE.client_online and not STATE.client_training and STATE.fl_ready:
                 response = await _to_thread(
                     _request,
                     "POST",
                     f"{_client_base_url()}/start",
                     json={
-                        "server_ip": os.environ.get(
-                            "FEDOPS_SERVER_HOST",
-                            "ccl.gachon.ac.kr",
-                        ),
+                        "server_ip": os.environ.get("FEDOPS_SERVER_HOST", ""),
                         "client_mac": STATE.client_mac,
                     },
                 )
@@ -154,10 +143,7 @@ async def _training_loop() -> None:
 
 @app.on_event("startup")
 async def startup() -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(message)s",
-    )
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
     BACKGROUND_TASKS.extend([
         asyncio.create_task(_client_presence_loop()),
         asyncio.create_task(_server_status_loop()),

@@ -1,9 +1,9 @@
-"""Owner-editable local input and data preparation contract."""
+"""Owner-editable local data contract and preprocessing."""
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import numpy as np
 import torch
@@ -11,18 +11,14 @@ from torch.utils.data import DataLoader, TensorDataset, random_split
 from torchvision import datasets, transforms
 
 
-def describe_input_features() -> Dict[str, Any]:
-    """Describe the model input and label contract published with the Task."""
+def describe_input_features() -> dict[str, Any]:
     return {
         "features": [{
             "name": "image",
             "shape": [1, 28, 28],
             "dtype": "float32",
             "range": [-1.0, 1.0],
-            "normalization": {
-                "mean": [0.5],
-                "std": [0.5],
-            },
+            "normalization": {"mean": [0.5], "std": [0.5]},
         }],
         "label": {
             "name": "digit",
@@ -33,13 +29,8 @@ def describe_input_features() -> Dict[str, Any]:
     }
 
 
-def preprocess(
-    sample: Dict[str, Any],
-) -> torch.Tensor:
-    """Convert one raw MNIST sample into a model-ready tensor."""
-    image = transforms.ToTensor()(
-        np.array(sample["image"], dtype=np.uint8, copy=True)
-    )
+def preprocess(sample: dict[str, Any]) -> torch.Tensor:
+    image = transforms.ToTensor()(np.array(sample["image"], dtype=np.uint8, copy=True))
     return transforms.Normalize((0.5,), (0.5,))(image)
 
 
@@ -48,30 +39,27 @@ def load_partition(
     validation_split: float,
     batch_size: int,
     *,
-    data_root: str = "./dataset/mnist",
+    data_root: str,
     seed: int = 42,
-) -> Tuple[DataLoader, DataLoader, DataLoader]:
-    """Load local MNIST and deterministically create train/validation/test splits."""
+    download: bool = False,
+) -> tuple[DataLoader, DataLoader, DataLoader]:
     if dataset.upper() != "MNIST":
         raise ValueError(f"This starter supports MNIST, received {dataset!r}")
     if not 0 < validation_split < 1:
         raise ValueError("validation_split must be between 0 and 1")
     if batch_size < 1:
         raise ValueError("batch_size must be at least 1")
-
     full_dataset = datasets.MNIST(
         root=str(Path(data_root)),
         train=True,
-        download=True,
+        download=download,
         transform=lambda image: preprocess({"image": image}),
     )
-    test_fraction = 0.2
     validation_size = max(1, int(validation_split * len(full_dataset)))
-    test_size = max(1, int(test_fraction * len(full_dataset)))
+    test_size = max(1, int(0.2 * len(full_dataset)))
     train_size = len(full_dataset) - validation_size - test_size
     if train_size < 1:
         raise ValueError("validation_split leaves no samples for local training")
-
     generator = torch.Generator().manual_seed(seed)
     train_data, validation_data, test_data = random_split(
         full_dataset,
@@ -85,18 +73,11 @@ def load_partition(
     )
 
 
-def build_validation_loaders(
-    *,
-    sample_count: int = 32,
-    batch_size: int = 8,
-    seed: int = 42,
-) -> Tuple[DataLoader, DataLoader]:
-    """Create network-free MNIST-shaped data for contract validation."""
+def build_smoke_loaders(
+    *, sample_count: int = 32, batch_size: int = 8, seed: int = 42
+) -> tuple[DataLoader, DataLoader]:
     if sample_count < 8:
         raise ValueError("sample_count must be at least 8")
-    if batch_size < 1:
-        raise ValueError("batch_size must be at least 1")
-
     generator = torch.Generator().manual_seed(seed)
     images = (torch.rand(sample_count, 1, 28, 28, generator=generator) * 2.0) - 1.0
     labels = torch.arange(sample_count, dtype=torch.long) % 10

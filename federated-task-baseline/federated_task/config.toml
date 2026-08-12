@@ -1,8 +1,6 @@
 random_seed = 42
 learning_rate = 0.001
 model_type = "Pytorch"
-task_id = "task_id"
-runtime_key = "task_id"
 num_epochs = 1
 batch_size = 32
 num_rounds = 2
@@ -16,10 +14,6 @@ name = "MNIST"
 root = "./dataset/mnist"
 validation_split = 0.2
 
-[wandb]
-use = false
-project = "MNIST_${task_id}"
-
 [server.strategy]
 name = "FedAvg"
 fraction_fit = 1.0
@@ -29,6 +23,4 @@ min_available_clients = 1
 min_evaluate_clients = 1
 
 [runtime]
-server_manager_url = "http://ccl.gachon.ac.kr:40019"
-federated_server_host = "ccl.gachon.ac.kr"
 manager_port = 8004
