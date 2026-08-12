@@ -1,24 +1,34 @@
-"""Load the selected Model Release and run one prediction."""
+"""User-editable Agent Builder Tool AI contract."""
 
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
 
-import torch
-
-from .data_preparation import preprocess
-from .training import MODEL_PATH, load_released_model
-
 
 def predict(payload: dict[str, Any], model_path: str | Path | None = None) -> dict[str, Any]:
-    if not isinstance(payload, dict) or "image" not in payload:
-        raise ValueError("input must contain an image")
-    selected_path = Path(model_path) if model_path else MODEL_PATH
-    model = load_released_model(selected_path)
-    model.eval()
-    input_tensor = preprocess({"image": payload["image"]}).unsqueeze(0)
-    with torch.no_grad():
-        probabilities = torch.softmax(model(input_tensor), dim=1)[0]
-    label = int(probabilities.argmax().item())
-    return {"label": label, "confidence": float(probabilities[label].item())}
+    """Run one inference with an Initial or Global Model release.
+
+    Args:
+        payload: JSON object matching ``federated_task/manifest.json`` input.
+        model_path: Optional selected model artifact. When omitted, load the
+        Task's local ``model_release/model.safetensors`` artifact.
+
+    Returns:
+        A JSON-serializable dictionary matching the Tool manifest output.
+
+    Use ``data_preparation.preprocess()`` and
+    ``training.load_released_model()`` so local training, federated learning,
+    and Agent Builder inference use one model and preprocessing contract.
+    """
+    del payload, model_path
+    raise NotImplementedError(
+        "Implement federated_task.tool.predict() and match manifest.json"
+    )
+
+
+def build_tool_smoke_payload() -> dict[str, Any]:
+    """Return one non-sensitive JSON payload accepted by :func:`predict`."""
+    raise NotImplementedError(
+        "Implement federated_task.tool.build_tool_smoke_payload()"
+    )

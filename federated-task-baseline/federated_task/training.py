@@ -1,16 +1,17 @@
-"""Training callbacks shared by local development and FedOps 1.2 FL runtime."""
+"""User-editable training contract plus fixed FedOps runtime adapters."""
 
 from __future__ import annotations
 
 import hashlib
 import json
 import math
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 import torch
-from torch import nn
 from safetensors.torch import load_file, save_file
+from torch import nn
 
 from fedops.client.parameter_contract import parameter_signature
 
@@ -25,6 +26,8 @@ MODEL_PATH = MODEL_RELEASE_DIR / "model.safetensors"
 MODEL_MANIFEST_PATH = MODEL_RELEASE_DIR / "manifest.json"
 
 
+# USER IMPLEMENTATION CONTRACT -------------------------------------------------
+
 def train_model(
     model: nn.Module,
     loader: Iterable,
@@ -34,42 +37,24 @@ def train_model(
     device: torch.device,
     max_batches: int | None = None,
 ) -> float:
-    model.to(device)
-    model.train()
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    total_loss = 0.0
-    completed = 0
-    for _ in range(epochs):
-        for inputs, labels in loader:
-            inputs, labels = inputs.to(device), labels.to(device)
-            optimizer.zero_grad()
-            loss = criterion(model(inputs), labels)
-            loss.backward()
-            optimizer.step()
-            total_loss += float(loss.item())
-            completed += 1
-            if max_batches is not None and completed >= max_batches:
-                model.to("cpu")
-                return total_loss / completed
-    model.to("cpu")
-    return total_loss / max(1, completed)
+    """Train ``model`` with local batches and return the mean training loss.
 
+    Args:
+        model: The local model to update in place.
+        loader: Batches shaped as ``(inputs, targets)``.
+        epochs: Number of local epochs.
+        learning_rate: Effective local learning rate.
+        device: Selected CPU, CUDA, or accelerator device.
+        max_batches: Optional readiness-only limit; honor it when provided.
 
-def _weighted_f1(labels: torch.Tensor, predictions: torch.Tensor) -> float:
-    labels, predictions = labels.cpu(), predictions.cpu()
-    if not labels.numel():
-        return 0.0
-    total = 0.0
-    for class_id in torch.unique(labels).tolist():
-        expected, predicted = labels == class_id, predictions == class_id
-        true_positive = int((expected & predicted).sum())
-        false_positive = int((~expected & predicted).sum())
-        false_negative = int((expected & ~predicted).sum())
-        support = int(expected.sum())
-        denominator = (2 * true_positive) + false_positive + false_negative
-        total += ((2 * true_positive / denominator) if denominator else 0.0) * support
-    return total / int(labels.numel())
+    Returns:
+        One finite ``float`` representing mean training loss. Move the model
+        back to CPU before returning so FedOps can serialize its parameters.
+    """
+    del model, loader, epochs, learning_rate, device, max_batches
+    raise NotImplementedError(
+        "Implement federated_task.training.train_model() with the Task loss and optimizer"
+    )
 
 
 def evaluate_model(
@@ -79,39 +64,21 @@ def evaluate_model(
     device: torch.device,
     max_batches: int | None = None,
 ) -> tuple[float, float, dict[str, float]]:
-    model.to(device)
-    model.eval()
-    criterion = nn.CrossEntropyLoss()
-    total_loss = 0.0
-    total_samples = 0
-    correct = 0
-    completed = 0
-    labels_seen: list[torch.Tensor] = []
-    predictions_seen: list[torch.Tensor] = []
-    with torch.no_grad():
-        for inputs, labels in loader:
-            inputs, labels = inputs.to(device), labels.to(device)
-            outputs = model(inputs)
-            total_loss += float(criterion(outputs, labels).item())
-            predictions = outputs.argmax(dim=1)
-            total_samples += int(labels.size(0))
-            correct += int((predictions == labels).sum().item())
-            completed += 1
-            labels_seen.append(labels)
-            predictions_seen.append(predictions)
-            if max_batches is not None and completed >= max_batches:
-                break
-    model.to("cpu")
-    labels_tensor = torch.cat(labels_seen) if labels_seen else torch.empty(0, dtype=torch.long)
-    predictions_tensor = (
-        torch.cat(predictions_seen) if predictions_seen else torch.empty(0, dtype=torch.long)
-    )
-    return (
-        total_loss / max(1, completed),
-        correct / max(1, total_samples),
-        {"f1_score": _weighted_f1(labels_tensor, predictions_tensor)},
+    """Evaluate a model and return the fixed FedOps evaluation tuple.
+
+    Returns:
+        Exactly ``(loss, primary_metric, additional_metrics)`` where the first
+        two values are finite floats and ``additional_metrics`` is a mapping of
+        metric names to finite float values. The primary metric may be accuracy,
+        F1, MAE, RMSE, or another Task-appropriate measure documented in README.
+    """
+    del model, loader, device, max_batches
+    raise NotImplementedError(
+        "Implement federated_task.training.evaluate_model() with Task metrics"
     )
 
+
+# FIXED MODEL RELEASE AND FEDOPS ADAPTERS -------------------------------------
 
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
@@ -121,7 +88,37 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _finite_float(value: Any, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{name} must be a number")
+    normalized = float(value)
+    if not math.isfinite(normalized):
+        raise ValueError(f"{name} must be finite")
+    return normalized
+
+
+def normalize_evaluation(
+    result: tuple[float, float, dict[str, float]],
+) -> tuple[float, float, dict[str, float]]:
+    """Validate the user evaluation result before runtime or release use."""
+    if not isinstance(result, tuple) or len(result) != 3:
+        raise ValueError("evaluate_model() must return (loss, primary_metric, metrics)")
+    loss, primary_metric, metrics = result
+    if not isinstance(metrics, dict):
+        raise ValueError("evaluate_model() metrics must be a dictionary")
+    normalized_metrics = {
+        str(name): _finite_float(value, f"metric {name!r}")
+        for name, value in metrics.items()
+    }
+    return (
+        _finite_float(loss, "evaluation loss"),
+        _finite_float(primary_metric, "primary metric"),
+        normalized_metrics,
+    )
+
+
 def load_released_model(path: Path = MODEL_PATH) -> nn.Module:
+    """Construct the Task model and load one exact safetensors release."""
     config = load_config()
     model = build_model(config["model"])
     model.load_state_dict(load_file(str(path), device="cpu"), strict=True)
@@ -135,6 +132,7 @@ def export_initial_model(
     download: bool = False,
     max_batches: int | None = None,
 ) -> dict[str, Any]:
+    """Train and export the owner Initial Model and immutable identity metadata."""
     config = load_config()
     seed = int(config["random_seed"])
     torch.manual_seed(seed)
@@ -156,26 +154,33 @@ def export_initial_model(
         )
     model = build_model(config["model"])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    train_loss = train_model(
-        model,
-        train_loader,
-        epochs=int(config["num_epochs"]),
-        learning_rate=float(config["learning_rate"]),
-        device=device,
-        max_batches=max_batches,
+    train_loss = _finite_float(
+        train_model(
+            model,
+            train_loader,
+            epochs=int(config["num_epochs"]),
+            learning_rate=float(config["learning_rate"]),
+            device=device,
+            max_batches=max_batches,
+        ),
+        "training loss",
     )
-    validation_loss, accuracy, metrics = evaluate_model(
-        model,
-        validation_loader,
-        device=device,
-        max_batches=max_batches,
+    validation_loss, primary_metric, additional_metrics = normalize_evaluation(
+        evaluate_model(
+            model,
+            validation_loader,
+            device=device,
+            max_batches=max_batches,
+        )
     )
-    values = [train_loss, validation_loss, accuracy, metrics["f1_score"]]
-    if not all(math.isfinite(value) for value in values):
-        raise ValueError("local training produced a non-finite metric")
 
     MODEL_RELEASE_DIR.mkdir(parents=True, exist_ok=True)
-    state = {name: tensor.detach().cpu().contiguous() for name, tensor in model.state_dict().items()}
+    state = {
+        name: tensor.detach().cpu().contiguous()
+        for name, tensor in model.state_dict().items()
+    }
+    if not state:
+        raise ValueError("build_model() produced no serializable model parameters")
     save_file(state, str(MODEL_PATH))
     signature = parameter_signature(model, str(config["model_type"]))
     manifest = {
@@ -193,10 +198,10 @@ def export_initial_model(
         "inputContract": "federated_task/manifest.json",
         "trainingData": "synthetic-smoke" if synthetic else "local-only",
         "metrics": {
-            "trainLoss": train_loss,
+            "trainingLoss": train_loss,
             "validationLoss": validation_loss,
-            "accuracy": accuracy,
-            "weightedF1": metrics["f1_score"],
+            "primaryMetric": primary_metric,
+            "additionalMetrics": additional_metrics,
         },
     }
     MODEL_MANIFEST_PATH.write_text(
@@ -207,6 +212,7 @@ def export_initial_model(
 
 
 def train_torch():
+    """Return the callback shape required by the FedOps 1.2 client."""
     def callback(model, train_loader, epochs, cfg, hp=None):
         learning_rate = (
             float(hp["learning_rate"])
@@ -227,9 +233,10 @@ def train_torch():
 
 
 def test_torch():
+    """Return the callback shape required by the FedOps client and server."""
     def callback(model, test_loader, cfg):
         del cfg
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        return evaluate_model(model, test_loader, device=device)
+        return normalize_evaluation(evaluate_model(model, test_loader, device=device))
 
     return callback

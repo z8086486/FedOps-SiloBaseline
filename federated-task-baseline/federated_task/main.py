@@ -13,7 +13,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-from .tool import predict
+from .tool import build_tool_smoke_payload, predict
 from .config import load_config
 from .training import export_initial_model
 from .task_check import check_readiness
@@ -153,7 +153,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         elif args.action == "tool-test":
             result = predict(
-                {"image": [[0 for _ in range(28)] for _ in range(28)]},
+                build_tool_smoke_payload(),
                 model_path=args.model_path,
             )
         else:

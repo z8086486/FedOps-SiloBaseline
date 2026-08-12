@@ -1,31 +1,71 @@
-"""Task model shared by local training, FedOps, and Tool AI inference."""
+"""User-editable model contract for one FedOps Federated Task.
+
+Keep the public function names, arguments, and return values. Replace each
+``NotImplementedError`` with the Task model implementation.
+"""
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
-import torch
 from torch import nn
-import torch.nn.functional as functional
 
 
-class MNISTClassifier(nn.Module):
-    def __init__(self, output_size: int = 10):
-        super().__init__()
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=5, stride=1, padding=2)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=5, stride=1, padding=2)
-        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
-        # Keep the FedOps 1.2 MNIST architecture checkpoint-compatible.
-        self.fc1 = nn.Linear(64 * 7 * 7, 1000)
-        self.fc2 = nn.Linear(1000, output_size)
+def build_model(config: Mapping[str, Any] | None = None) -> nn.Module:
+    """Build a new model instance with the Federated Task architecture.
 
-    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-        values = self.pool(functional.relu(self.conv1(inputs)))
-        values = self.pool(functional.relu(self.conv2(values)))
-        values = torch.flatten(values, start_dim=1)
-        return self.fc2(functional.relu(self.fc1(values)))
+    Args:
+        config: The ``model`` object from ``conf/config.yaml``.
+
+    Returns:
+        A new ``torch.nn.Module``. Every owner, participant, and aggregation
+        server must construct the same parameter names, shapes, and dtypes.
+
+    Implementation guidance:
+        Define the model class in this file (or import it from another source
+        file) and return it here. Do not load participant data or contact the
+        FedOps server in this function.
+    """
+    del config
+    raise NotImplementedError(
+        "Implement federated_task.model.build_model() with the Task model architecture"
+    )
 
 
-def build_model(config: dict[str, Any] | None = None) -> MNISTClassifier:
-    model_config = config or {}
-    return MNISTClassifier(output_size=int(model_config.get("output_size", 10)))
+def run_model(model: nn.Module, inputs: Any) -> Any:
+    """Run one forward pass for readiness and Tool-compatible validation.
+
+    Args:
+        model: A model returned by :func:`build_model`.
+        inputs: One batched value returned by ``build_contract_probe()``.
+
+    Returns:
+        The raw model output. For one tensor input this is normally
+        ``model(inputs)``. For multiple inputs it may be
+        ``model(*inputs)`` or ``model(**inputs)``.
+    """
+    del model, inputs
+    raise NotImplementedError(
+        "Implement federated_task.model.run_model() for the Task input structure"
+    )
+
+
+def validate_model_output(output: Any, config: Mapping[str, Any]) -> dict[str, Any]:
+    """Validate a probe output and return a JSON-serializable summary.
+
+    Args:
+        output: The result of :func:`run_model` for a batched contract probe.
+        config: The complete Task configuration.
+
+    Returns:
+        A JSON-serializable dictionary describing the verified output, for
+        example ``{"shape": [2, 10], "dtype": "float32"}``.
+
+    Raise ``ValueError`` when the output cannot satisfy the Task's documented
+    output contract.
+    """
+    del output, config
+    raise NotImplementedError(
+        "Implement federated_task.model.validate_model_output() for readiness"
+    )

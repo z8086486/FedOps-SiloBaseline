@@ -22,21 +22,27 @@ from fedops.client.parameter_contract import (
 )
 
 from .config import load_config
-from .data_preparation import build_smoke_loaders, describe_input_features, load_partition
-from .model import build_model
-from .tool import predict
+from .data_preparation import (
+    build_contract_probe,
+    build_smoke_loaders,
+    describe_input_features,
+    load_partition,
+)
+from .model import build_model, run_model, validate_model_output
+from .tool import build_tool_smoke_payload, predict
 from .training import (
     MODEL_MANIFEST_PATH,
     MODEL_PATH,
     evaluate_model,
     load_released_model,
+    normalize_evaluation,
     test_torch,
     train_model,
     train_torch,
 )
 
 
-CHECKER_VERSION = "1.1.0"
+CHECKER_VERSION = "2.0.0"
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 FORBIDDEN_PARTS = {".git", ".venv", "__pycache__", ".fedops-studio", "dataset", "datasets"}
 REQUIRED_README_HEADINGS = {
@@ -193,11 +199,22 @@ def check_readiness(
         data_source = "synthetic-contract-smoke"
 
     contract = describe_input_features()
+    if not isinstance(contract, dict) or contract.get("raw_data_upload") is not False:
+        raise ValueError("describe_input_features() must declare raw_data_upload=False")
+    try:
+        json.dumps(contract, ensure_ascii=False)
+    except (TypeError, ValueError) as error:
+        raise ValueError("input feature contract must be JSON-serializable") from error
     model = load_released_model()
-    probe = torch.zeros(2, *contract["features"][0]["shape"])
-    output = model(probe)
-    if list(output.shape) != [2, int(config["model"]["output_size"])]:
-        raise ValueError("model output does not match the Task output contract")
+    probe = build_contract_probe(batch_size=2)
+    output = run_model(model, probe)
+    output_summary = validate_model_output(output, config)
+    if not isinstance(output_summary, dict):
+        raise ValueError("validate_model_output() must return a dictionary")
+    try:
+        json.dumps(output_summary, ensure_ascii=False)
+    except (TypeError, ValueError) as error:
+        raise ValueError("model output summary must be JSON-serializable") from error
 
     before = [value.copy() for value in get_parameters(model, model_type)]
     payload_bytes = _construct_fedops_client(model, config, train_loader, validation_loader)
@@ -209,13 +226,15 @@ def check_readiness(
         device=torch.device("cpu"),
         max_batches=max_batches,
     )
-    validation_loss, accuracy, metrics = evaluate_model(
-        model,
-        validation_loader,
-        device=torch.device("cpu"),
-        max_batches=max_batches,
+    validation_loss, primary_metric, metrics = normalize_evaluation(
+        evaluate_model(
+            model,
+            validation_loader,
+            device=torch.device("cpu"),
+            max_batches=max_batches,
+        )
     )
-    values = [train_loss, validation_loss, accuracy, metrics["f1_score"]]
+    values = [float(train_loss), validation_loss, primary_metric, *metrics.values()]
     if not all(math.isfinite(value) for value in values):
         raise ValueError("readiness local training produced a non-finite value")
     after = get_parameters(model, model_type)
@@ -232,7 +251,13 @@ def check_readiness(
     expected = expected_parameter_signature or model_manifest["parameterSignature"]["fingerprint"]
     if signature["fingerprint"] != expected:
         raise ValueError("local parameter signature does not match the Published Task")
-    tool_result = predict({"image": [[0 for _ in range(28)] for _ in range(28)]})
+    tool_result = predict(build_tool_smoke_payload())
+    if not isinstance(tool_result, dict):
+        raise ValueError("Tool predict() must return a dictionary")
+    try:
+        json.dumps(tool_result, ensure_ascii=False)
+    except (TypeError, ValueError) as error:
+        raise ValueError("Tool output must be JSON-serializable") from error
 
     return {
         "schemaVersion": 1,
@@ -248,12 +273,12 @@ def check_readiness(
             "project": project,
             "modelArtifactSha256": model_manifest["sha256"],
             "dataSource": data_source,
-            "inputShape": contract["features"][0]["shape"],
-            "outputShape": list(output.shape),
+            "inputContract": contract,
+            "outputContract": output_summary,
             "trainLoss": train_loss,
             "validationLoss": validation_loss,
-            "accuracy": accuracy,
-            "weightedF1": metrics["f1_score"],
+            "primaryMetric": primary_metric,
+            "additionalMetrics": metrics,
             "fedopsClientConstructed": True,
             "parameterTensorCount": len(after),
             "changedParameterTensorCount": changed,

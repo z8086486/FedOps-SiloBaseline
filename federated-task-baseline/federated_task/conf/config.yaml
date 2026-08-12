@@ -1,19 +1,21 @@
-# FedOps 1.2-compatible Task configuration.
+# User-editable FedOps Federated Task configuration.
 random_seed: 42
 learning_rate: 0.001
 
+# FedOps 1.2-compatible transport type. This Baseline currently supports PyTorch.
 model_type: Pytorch
 model:
-  _target_: federated_task.model.MNISTClassifier
-  output_size: 10
+  # Add only the constructor values consumed by model.build_model(config).
+  name: replace-with-model-name
 
 dataset:
-  name: MNIST
-  root: ./dataset/mnist
+  name: replace-with-dataset-name
+  # Agent Studio overrides this with a local data binding for owner/participant runs.
+  root: ./dataset
   validation_split: 0.2
   download: false
 
-# Web/Agent Studio inject the actual runtime key when a run starts.
+# FedOps Web/Agent Studio inject the actual runtime key when a run starts.
 task_id: task_id
 
 wandb:
@@ -23,7 +25,7 @@ wandb:
   project: ${dataset.name}_${task_id}
 
 num_epochs: 1
-batch_size: 128
+batch_size: 32
 num_rounds: 2
 clients_per_round: 1
 

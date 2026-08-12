@@ -42,17 +42,21 @@ def validate_config(config: dict[str, Any]) -> None:
             raise ValueError(f"config.yaml: {key} must be at least 1")
 
     model = config.get("model")
-    if not isinstance(model, dict) or not isinstance(model.get("output_size"), int):
-        raise ValueError("config.yaml: model.output_size must be an integer")
-    if model["output_size"] < 2:
-        raise ValueError("config.yaml: model.output_size must be at least 2")
+    if not isinstance(model, dict) or not model:
+        raise ValueError("config.yaml: model must be a non-empty object")
 
     dataset = config.get("dataset")
-    if not isinstance(dataset, dict) or dataset.get("name") != "MNIST":
-        raise ValueError("config.yaml: starter dataset.name must be MNIST")
+    if not isinstance(dataset, dict):
+        raise ValueError("config.yaml: dataset must be an object")
+    if not isinstance(dataset.get("name"), str) or not dataset["name"].strip():
+        raise ValueError("config.yaml: dataset.name must be a non-empty string")
+    if not isinstance(dataset.get("root"), str) or not dataset["root"].strip():
+        raise ValueError("config.yaml: dataset.root must be a non-empty string")
     split = dataset.get("validation_split")
     if not isinstance(split, (int, float)) or not 0 < float(split) < 1:
         raise ValueError("config.yaml: dataset.validation_split must be between 0 and 1")
+    if not isinstance(dataset.get("download"), bool):
+        raise ValueError("config.yaml: dataset.download must be boolean")
 
     wandb = config.get("wandb")
     if not isinstance(wandb, dict) or not isinstance(wandb.get("use"), bool):

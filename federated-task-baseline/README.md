@@ -1,41 +1,67 @@
-# Federated Task: MNIST classifier
+# Federated Task: replace with Task name
 
-This starter preserves the FedOps 1.2 client/server execution contract and adds the
-FedOps 1.3 local-development, Registry Release, and Tool AI contracts. It can be
-developed locally, published as one immutable Release, and opened by another user in
-FedOps Agent Studio.
+Replace this starter text with the Registry Task Card. The Baseline intentionally
+contains no example model or dataset. Implement the marked contracts below while
+keeping their public function names, arguments, and return values.
+
+## Implementation contracts
+
+| File | Function | Fixed output |
+| --- | --- | --- |
+| `federated_task/model.py` | `build_model(config)` | new `torch.nn.Module` |
+|  | `run_model(model, inputs)` | raw model output |
+|  | `validate_model_output(output, config)` | JSON-serializable output summary |
+| `federated_task/data_preparation.py` | `describe_input_features()` | JSON-serializable feature/label contract |
+|  | `preprocess(sample)` | model input tensor structure |
+|  | `load_partition(...)` | `(train_loader, validation_loader, test_loader)` |
+|  | `build_smoke_loaders(...)` | `(train_loader, validation_loader)` |
+|  | `build_contract_probe(batch_size)` | one non-sensitive batched model input |
+|  | `gl_model_torch_validation(...)` | server validation `DataLoader` |
+| `federated_task/training.py` | `train_model(...)` | finite mean training-loss `float` |
+|  | `evaluate_model(...)` | `(loss, primary_metric, metrics)` |
+| `federated_task/tool.py` | `predict(payload, model_path)` | Tool manifest-compatible JSON object |
+|  | `build_tool_smoke_payload()` | non-sensitive Tool input JSON object |
+
+Each function contains its argument and return contract in its docstring. Do not
+duplicate federated parameter serialization: the FedOps library transports the model
+parameters created by `build_model()`.
 
 ## Intended use
 
-Classify normalized 28×28 grayscale handwritten digit images into labels 0–9. Replace
-the starter model and data adapter when creating a different Federated Task.
+TODO: Describe the problem, intended users, Initial/Global Model behavior, and the
+primary evaluation metric.
 
 ## Local data setup
 
-Raw data remains on the Agent Studio device. Bind a local MNIST directory in Agent
-Studio or place it in the account-local data area. The release packager always excludes
-raw datasets and local paths.
+TODO: Document the expected local files, columns/features, labels, shapes, dtypes,
+preprocessing, and train/validation/test split. Raw data must remain on the Agent
+Studio device and is supplied through `--data-root` or `FEDOPS_LOCAL_DATA_DIR`.
 
-Expected input:
+Do not include raw data, credentials, or a user-specific absolute path in a Registry
+Release.
 
-- feature `image`: `float32`, shape `[1, 28, 28]`, normalized to `[-1, 1]`
-- label `digit`: `int64`, values `0`–`9`
+## Local development
 
-## Local training
+1. Implement the user contracts in `model.py`, `data_preparation.py`, `training.py`,
+   and `tool.py`.
+2. Replace `conf/config.yaml` placeholders and update the Tool `manifest.json`.
+3. Add Task dependencies to `pyproject.toml`, then let Agent Studio Environment Sync
+   update `uv.lock`; do not edit `uv.lock` by hand.
+4. Bind local data and create the Initial Model:
 
 ```bash
-uv sync --locked --extra participate --link-mode copy
-uv run --locked --no-sync fedops-task local-train \
-  --data-root "$FEDOPS_LOCAL_DATA_DIR"
-uv run --locked --no-sync fedops-task check-readiness --mode release
+uv sync --extra participate --link-mode copy
+uv run fedops-task local-train --data-root "$FEDOPS_LOCAL_DATA_DIR"
+uv run fedops-task tool-test
+uv run fedops-task check-readiness --mode release
 ```
 
-Local training writes the versioned initial model to `model_release/`. It never uploads
-the dataset.
+Unimplemented contracts stop with a specific `NotImplementedError`; a blank starter
+cannot accidentally pass Release Readiness.
 
 ## Federated participation
 
-After downloading a Published Release, connect local data and run:
+After opening a Published Release, a participant binds their own local data and runs:
 
 ```bash
 uv run --locked --no-sync fedops-task check-readiness \
@@ -43,36 +69,25 @@ uv run --locked --no-sync fedops-task check-readiness \
   --data-root "$FEDOPS_LOCAL_DATA_DIR"
 ```
 
-The readiness check constructs the actual FedOps client and uses the same parameter
-contract as `fedops.client.client_fl.FLClient`. Agent Studio enables participation only
-when local training changes that payload and its structure is compatible with the
-Published Release.
+Participation Readiness verifies the actual local loader, local training update,
+FedOps parameter signature, model input/output contract, and Tool inference without
+uploading raw data or parameter values.
 
-The existing FedOps 1.2 entrypoints remain explicit:
+## Model and Tool release
 
-```bash
-uv run --locked --no-sync fedops-task-client
-uv run --locked --no-sync fedops-task-client-manager
-uv run --locked --no-sync fedops-task-server
-```
-
-FedOps Web and Agent Studio inject Task identity, local-data binding, server-manager
-address, and federated-server endpoint at runtime. Do not hard-code those values in the
-Release.
-
-## Model use
-
-`federated_task.tool:predict` loads the selected Initial or Global
-Model and applies the same input normalization used by local training.
+`local-train` writes `model_release/model.safetensors` and replaces the draft model
+manifest with checksum, size, parameter signature, provenance, and evaluation metrics.
+Update `federated_task/manifest.json` and `tool.py` together so Agent Builder receives
+the exact JSON input/output contract.
 
 ## Limitations
 
-The bundled architecture is an MNIST example, not a general-purpose vision model.
-Owners must document task-specific data quality, bias, safety, and evaluation limits
-before publishing a derived task.
+TODO: Document known model, population, data-quality, bias, safety, latency, hardware,
+and out-of-distribution limitations.
 
 ## Privacy
 
-Raw samples, local filesystem paths, model updates, credentials, and signed download
-URLs are never included in a Federated Task Release. Only readiness status and contract
-fingerprints may be sent to FedOps Web.
+Raw samples, local filesystem paths, credentials, signed download URLs, and model
+parameter values must not be included in the Federated Task Release or readiness
+metadata. Only source/model checksums, parameter-structure fingerprints, metrics, and
+pass/fail status may leave the local device.

@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fedops-federated-task"
-version = "0.4.0"
-description = "FedOps 1.2-compatible Federated Task with 1.3 Registry and Tool AI contracts"
+version = "0.5.0"
+description = "Implementation-contract template for a FedOps Federated Task"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 license = "Apache-2.0"
@@ -17,7 +17,6 @@ dependencies = [
     "pyyaml==6.0.2",
     "safetensors==0.6.2",
     "torch==2.8.0",
-    "torchvision==0.23.0",
 ]
 
 [project.optional-dependencies]
