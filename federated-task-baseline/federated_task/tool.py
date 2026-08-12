@@ -7,8 +7,8 @@ from typing import Any
 
 import torch
 
-from ..local_training.data_preparation import preprocess
-from ..local_training.train import MODEL_PATH, load_released_model
+from .data_preparation import preprocess
+from .training import MODEL_PATH, load_released_model
 
 
 def predict(payload: dict[str, Any], model_path: str | Path | None = None) -> dict[str, Any]:

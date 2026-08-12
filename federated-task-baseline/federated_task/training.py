@@ -1,4 +1,4 @@
-"""Local training, evaluation, and portable model release export."""
+"""Training callbacks shared by local development and FedOps 1.2 FL runtime."""
 
 from __future__ import annotations
 
@@ -12,13 +12,14 @@ import torch
 from torch import nn
 from safetensors.torch import load_file, save_file
 
-from ..config import load_config
-from ..federated_learning.parameters import parameter_signature
+from fedops.client.parameter_contract import parameter_signature
+
+from .config import load_config
 from .data_preparation import build_smoke_loaders, load_partition
 from .model import build_model
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MODEL_RELEASE_DIR = PROJECT_ROOT / "model_release"
 MODEL_PATH = MODEL_RELEASE_DIR / "model.safetensors"
 MODEL_MANIFEST_PATH = MODEL_RELEASE_DIR / "manifest.json"
@@ -176,7 +177,7 @@ def export_initial_model(
     MODEL_RELEASE_DIR.mkdir(parents=True, exist_ok=True)
     state = {name: tensor.detach().cpu().contiguous() for name, tensor in model.state_dict().items()}
     save_file(state, str(MODEL_PATH))
-    signature = parameter_signature(model)
+    signature = parameter_signature(model, str(config["model_type"]))
     manifest = {
         "schemaVersion": 1,
         "status": "ready",
@@ -185,11 +186,11 @@ def export_initial_model(
         "framework": "pytorch",
         "format": "safetensors",
         "artifact": MODEL_PATH.name,
-        "architecture": "federated_task.local_training.model:build_model",
+        "architecture": "federated_task.model:build_model",
         "size": MODEL_PATH.stat().st_size,
         "sha256": _sha256(MODEL_PATH),
         "parameterSignature": signature,
-        "inputContract": "federated_task/agent_tool/manifest.json",
+        "inputContract": "federated_task/manifest.json",
         "trainingData": "synthetic-smoke" if synthetic else "local-only",
         "metrics": {
             "trainLoss": train_loss,
@@ -206,13 +207,18 @@ def export_initial_model(
 
 
 def train_torch():
-    def callback(model, train_loader, epochs, cfg):
+    def callback(model, train_loader, epochs, cfg, hp=None):
+        learning_rate = (
+            float(hp["learning_rate"])
+            if hp and hp.get("learning_rate") is not None
+            else float(cfg.learning_rate)
+        )
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         train_model(
             model,
             train_loader,
             epochs=int(epochs),
-            learning_rate=float(cfg.learning_rate),
+            learning_rate=learning_rate,
             device=device,
         )
         return model

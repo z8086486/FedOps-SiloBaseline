@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "name": "mnist-classifier",
   "description": "Classify one 28x28 grayscale handwritten digit image.",
-  "entrypoint": "federated_task.agent_tool.inference:predict",
+  "entrypoint": "federated_task.tool:predict",
   "modelFormat": "safetensors",
   "input": {
     "type": "object",

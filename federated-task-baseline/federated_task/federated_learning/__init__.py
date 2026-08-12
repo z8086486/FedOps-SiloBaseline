@@ -1,1 +1,0 @@
-"""FedOps-managed participation adapters."""

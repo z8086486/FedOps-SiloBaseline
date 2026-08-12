@@ -1,4 +1,4 @@
-"""Owner-editable model definition."""
+"""Task model shared by local training, FedOps, and Tool AI inference."""
 
 from __future__ import annotations
 
@@ -15,8 +15,9 @@ class MNISTClassifier(nn.Module):
         self.conv1 = nn.Conv2d(1, 32, kernel_size=5, stride=1, padding=2)
         self.conv2 = nn.Conv2d(32, 64, kernel_size=5, stride=1, padding=2)
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.fc1 = nn.Linear(64 * 7 * 7, 256)
-        self.fc2 = nn.Linear(256, output_size)
+        # Keep the FedOps 1.2 MNIST architecture checkpoint-compatible.
+        self.fc1 = nn.Linear(64 * 7 * 7, 1000)
+        self.fc2 = nn.Linear(1000, output_size)
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         values = self.pool(functional.relu(self.conv1(inputs)))

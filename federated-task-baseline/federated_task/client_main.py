@@ -9,10 +9,10 @@ import random
 import numpy as np
 import torch
 
-from ..config import load_config
-from ..local_training import data_preparation
-from ..local_training.model import build_model
-from ..local_training.train import MODEL_PATH, load_released_model, test_torch, train_torch
+from .config import load_config
+from . import data_preparation
+from .model import build_model
+from .training import MODEL_PATH, load_released_model, test_torch, train_torch
 
 
 def _participation_imports():

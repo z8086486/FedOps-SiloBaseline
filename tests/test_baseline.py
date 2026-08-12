@@ -8,19 +8,22 @@ import torch
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE = ROOT / "federated-task-baseline"
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(BASELINE))
 
+from fedops.client.parameter_contract import describe_parameters, verify_parameter_round_trip
+from federated_task.client_main import main as client_main
 from federated_task.config import load_config, validate_config
-from federated_task.federated_learning.parameters import verify_round_trip
-from federated_task.local_training.data_preparation import build_smoke_loaders, describe_input_features
-from federated_task.local_training.model import build_model
-from federated_task.local_training.train import (
+from federated_task.data_preparation import build_smoke_loaders, describe_input_features
+from federated_task.model import build_model
+from federated_task.server_main import main as server_main
+from federated_task.training import (
     MODEL_MANIFEST_PATH,
     MODEL_PATH,
     export_initial_model,
     train_model,
 )
-from federated_task.task_readiness.check import check_readiness
+from federated_task.task_check import check_readiness
 from tools.build_release import build_manifest
 
 
@@ -46,19 +49,31 @@ class BaselineContractTest(unittest.TestCase):
             max_batches=1,
         )
         self.assertGreaterEqual(loss, 0)
-        result = verify_round_trip(model, lambda: build_model({"output_size": 10}))
+        result = verify_parameter_round_trip(
+            model,
+            lambda: build_model({"output_size": 10}),
+            "Pytorch",
+        )
         self.assertTrue(result["ok"])
         self.assertGreater(result["payloadBytes"], 0)
+        self.assertFalse(any("bn" in item["name"] for item in describe_parameters(model, "Pytorch")))
 
     def test_release_manifest_contains_only_user_files(self):
         manifest = build_manifest()
-        self.assertEqual(manifest["baseline"]["release_version"], "0.3.0")
+        self.assertEqual(manifest["baseline"]["release_version"], "0.4.0")
         paths = {entry["path"] for entry in manifest["files"]}
-        self.assertIn("federated_task/task_readiness/check.py", paths)
+        self.assertIn("federated_task/task_check.py", paths)
+        self.assertIn("federated_task/server_main.py", paths)
+        self.assertIn("federated_task/client_main.py", paths)
         self.assertIn("model_release/manifest.json", paths)
+        self.assertNotIn("federated_task/federated_learning/parameters.py", paths)
         self.assertFalse(any(path.startswith("tests/") or path.startswith("tools/") for path in paths))
         for entry in manifest["files"]:
             self.assertTrue((BASELINE / entry["path"]).is_file())
+
+    def test_fedops_1_2_client_and_server_entrypoints_are_present(self):
+        self.assertTrue(callable(client_main))
+        self.assertTrue(callable(server_main))
 
 
 class ReadinessTest(unittest.TestCase):

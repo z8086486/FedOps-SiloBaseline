@@ -1,4 +1,4 @@
-"""Communication manager for an authorized FedOps participation run."""
+"""FedOps 1.2-compatible communication manager for an authorized run."""
 
 from __future__ import annotations
 

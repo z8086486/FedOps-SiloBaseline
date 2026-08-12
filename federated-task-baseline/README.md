@@ -1,8 +1,9 @@
 # Federated Task: MNIST classifier
 
-This starter defines a complete FedOps Federated Task that can be developed locally,
-published as an immutable release, and opened by an approved participant in FedOps
-Agent Studio.
+This starter preserves the FedOps 1.2 client/server execution contract and adds the
+FedOps 1.3 local-development, Registry Release, and Tool AI contracts. It can be
+developed locally, published as one immutable Release, and opened by another user in
+FedOps Agent Studio.
 
 ## Intended use
 
@@ -23,8 +24,9 @@ Expected input:
 ## Local training
 
 ```bash
-uv sync
-uv run --locked --no-sync fedops-task local-train
+uv sync --locked --extra participate --link-mode copy
+uv run --locked --no-sync fedops-task local-train \
+  --data-root "$FEDOPS_LOCAL_DATA_DIR"
 uv run --locked --no-sync fedops-task check-readiness --mode release
 ```
 
@@ -41,12 +43,26 @@ uv run --locked --no-sync fedops-task check-readiness \
   --data-root "$FEDOPS_LOCAL_DATA_DIR"
 ```
 
-Agent Studio enables participation only when local training produces a serializable
-parameter update compatible with the Published Release and current server run.
+The readiness check constructs the actual FedOps client and uses the same parameter
+contract as `fedops.client.client_fl.FLClient`. Agent Studio enables participation only
+when local training changes that payload and its structure is compatible with the
+Published Release.
+
+The existing FedOps 1.2 entrypoints remain explicit:
+
+```bash
+uv run --locked --no-sync fedops-task-client
+uv run --locked --no-sync fedops-task-client-manager
+uv run --locked --no-sync fedops-task-server
+```
+
+FedOps Web and Agent Studio inject Task identity, local-data binding, server-manager
+address, and federated-server endpoint at runtime. Do not hard-code those values in the
+Release.
 
 ## Model use
 
-`federated_task.agent_tool.inference:predict` loads the selected Initial or Global
+`federated_task.tool:predict` loads the selected Initial or Global
 Model and applies the same input normalization used by local training.
 
 ## Limitations

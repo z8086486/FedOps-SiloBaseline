@@ -1,4 +1,4 @@
-"""Owner-editable local data contract and preprocessing."""
+"""Task data contract shared by local, client, server, and Tool AI paths."""
 
 from __future__ import annotations
 
@@ -98,3 +98,19 @@ def build_smoke_loaders(
         ),
         DataLoader(validation_data, batch_size=min(batch_size, validation_size)),
     )
+
+
+def gl_model_torch_validation(
+    batch_size: int,
+    *,
+    data_root: str,
+    download: bool = False,
+) -> DataLoader:
+    """Load the server-side validation set used by the FedOps 1.2 server path."""
+    dataset = datasets.MNIST(
+        root=str(Path(data_root)),
+        train=False,
+        download=download,
+        transform=lambda image: preprocess({"image": image}),
+    )
+    return DataLoader(dataset, batch_size=batch_size)

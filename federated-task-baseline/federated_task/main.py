@@ -13,10 +13,10 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-from .agent_tool.inference import predict
+from .tool import predict
 from .config import load_config
-from .local_training.train import export_initial_model
-from .task_readiness.check import check_readiness
+from .training import export_initial_model
+from .task_check import check_readiness
 
 
 def _terminate_process(process: subprocess.Popen, name: str, timeout_seconds: float = 10.0) -> None:
@@ -72,14 +72,14 @@ def _run_participation(run_config: Mapping[str, Any]) -> None:
         "FEDOPS_SERVER_HOST": server_host,
     })
     manager = subprocess.Popen(
-        [sys.executable, "-m", "federated_task.federated_learning.client_manager_main"],
+        [sys.executable, "-m", "federated_task.client_manager_main"],
         env=process_env,
     )
     client = None
     try:
         _wait_for_manager(manager, manager_port, startup_timeout)
         client = subprocess.Popen(
-            [sys.executable, "-m", "federated_task.federated_learning.client_main"],
+            [sys.executable, "-m", "federated_task.client_main"],
             env=process_env,
         )
         while True:
