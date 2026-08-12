@@ -1,4 +1,4 @@
-"""Load the same Hydra YAML used by FedOps client and server entrypoints."""
+"""FEDOPS RUNTIME FILE - fixed shared config loader; normal Task authors do not edit."""
 
 from __future__ import annotations
 

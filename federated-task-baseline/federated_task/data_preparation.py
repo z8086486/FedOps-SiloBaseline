@@ -1,7 +1,8 @@
-"""User-editable local-data contract for one FedOps Federated Task.
+"""User-owned local-data adapter with fixed FedOps integration hooks.
 
-Raw data must remain on the Agent Studio device. Keep the function names,
-arguments, and return values below while replacing the implementation gaps.
+Raw data remains on the Agent Studio device. Keep every ``FEDOPS CONTRACT``
+function name, argument, default value, keyword-only marker, and return structure.
+Real and synthetic loaders must yield the same ``(inputs, targets)`` batch shape.
 """
 
 from __future__ import annotations
@@ -12,6 +13,8 @@ from typing import Any
 from torch.utils.data import DataLoader
 
 
+# FEDOPS CONTRACT - DO NOT RENAME OR CHANGE ARGUMENTS/RETURN TYPE.
+# EDIT HERE - document the exact feature and label contract as JSON-safe metadata.
 def describe_input_features() -> dict[str, Any]:
     """Describe model features, labels, shape, dtype, and preprocessing.
 
@@ -19,7 +22,7 @@ def describe_input_features() -> dict[str, Any]:
         A JSON-serializable dictionary with at least ``features``, ``label``,
         and ``raw_data_upload``. ``raw_data_upload`` must remain ``False``.
 
-    Example shape only::
+    Example implementation shape only::
 
         {
             "features": [{"name": "feature", "shape": [8], "dtype": "float32"}],
@@ -32,6 +35,8 @@ def describe_input_features() -> dict[str, Any]:
     )
 
 
+# FEDOPS CONTRACT - DO NOT RENAME OR CHANGE ARGUMENTS/RETURN TYPE.
+# EDIT HERE - convert one raw sample; never upload or report the source path.
 def preprocess(sample: Mapping[str, Any]) -> Any:
     """Convert one raw sample into the input structure expected by the model.
 
@@ -41,6 +46,10 @@ def preprocess(sample: Mapping[str, Any]) -> Any:
     Returns:
         A tensor, tuple/list of tensors, or mapping of tensors accepted by
         ``run_model()`` and the training implementation.
+
+    Example implementation for numeric features::
+
+        return torch.tensor(sample["features"], dtype=torch.float32)
     """
     del sample
     raise NotImplementedError(
@@ -48,6 +57,8 @@ def preprocess(sample: Mapping[str, Any]) -> Any:
     )
 
 
+# FEDOPS CONTRACT - DO NOT RENAME OR CHANGE ARGUMENTS/DEFAULTS/KEYWORD-ONLY MARKER.
+# EDIT HERE - open only the user-selected local data binding and create three loaders.
 def load_partition(
     dataset: str,
     validation_split: float,
@@ -70,6 +81,19 @@ def load_partition(
     Returns:
         Exactly ``(train_loader, validation_loader, test_loader)``. Every batch
         must have the form ``(inputs, targets)`` expected by ``training.py``.
+
+    Example implementation outline::
+
+        rows = read_local_rows(data_root)
+        dataset_object = TaskDataset(rows, transform=preprocess)
+        train_data, validation_data, test_data = deterministic_split(
+            dataset_object, validation_split, seed
+        )
+        return (
+            DataLoader(train_data, batch_size=batch_size, shuffle=True),
+            DataLoader(validation_data, batch_size=batch_size),
+            DataLoader(test_data, batch_size=batch_size),
+        )
     """
     del dataset, validation_split, batch_size, data_root, seed, download
     raise NotImplementedError(
@@ -77,6 +101,8 @@ def load_partition(
     )
 
 
+# FEDOPS CONTRACT - DO NOT RENAME OR CHANGE ARGUMENTS/DEFAULTS/KEYWORD-ONLY MARKER.
+# EDIT HERE - create non-sensitive fake data with the exact real batch contract.
 def build_smoke_loaders(
     *,
     sample_count: int = 32,
@@ -91,6 +117,10 @@ def build_smoke_loaders(
 
     Do not read private data here. This hook proves the executable contract
     before a participant connects their own local dataset.
+
+    Example outline: construct tensors with the same input/target shape and
+    dtype as ``load_partition()``, wrap them in ``TensorDataset``, and return
+    separate training and validation ``DataLoader`` objects.
     """
     del sample_count, batch_size, seed
     raise NotImplementedError(
@@ -98,12 +128,18 @@ def build_smoke_loaders(
     )
 
 
+# FEDOPS CONTRACT - DO NOT RENAME OR CHANGE ARGUMENTS/DEFAULT VALUE.
+# EDIT HERE - return model inputs only, not labels and not private data.
 def build_contract_probe(batch_size: int = 2) -> Any:
     """Build one batched model input without reading real user data.
 
     Returns:
         The exact input structure accepted by ``model.run_model()``. The first
         dimension of tensor values should equal ``batch_size``.
+
+    Example implementation for eight numeric features::
+
+        return torch.zeros(batch_size, 8, dtype=torch.float32)
     """
     del batch_size
     raise NotImplementedError(
@@ -111,6 +147,8 @@ def build_contract_probe(batch_size: int = 2) -> Any:
     )
 
 
+# FEDOPS CONTRACT - DO NOT RENAME OR CHANGE ARGUMENTS/DEFAULTS/KEYWORD-ONLY MARKER.
+# EDIT HERE - use only owner-controlled/licensed server validation data.
 def gl_model_torch_validation(
     batch_size: int,
     *,
@@ -124,6 +162,9 @@ def gl_model_torch_validation(
 
     This must not depend on a participant's private dataset. Use only an
     owner-controlled or explicitly licensed central validation source.
+
+    Example outline: open the permitted validation dataset below ``data_root``,
+    apply the same preprocessing, and return one non-shuffled ``DataLoader``.
     """
     del batch_size, data_root, download
     raise NotImplementedError(

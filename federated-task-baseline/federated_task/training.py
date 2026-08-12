@@ -1,4 +1,4 @@
-"""User-editable training contract plus fixed FedOps runtime adapters."""
+"""User-owned training hooks followed by fixed FedOps runtime adapters."""
 
 from __future__ import annotations
 
@@ -26,8 +26,11 @@ MODEL_PATH = MODEL_RELEASE_DIR / "model.safetensors"
 MODEL_MANIFEST_PATH = MODEL_RELEASE_DIR / "manifest.json"
 
 
-# USER IMPLEMENTATION CONTRACT -------------------------------------------------
+# USER IMPLEMENTATION ---------------------------------------------------------
+# Add Task-specific losses, metrics, and optimizer helpers in this section only.
 
+# FEDOPS CONTRACT - DO NOT RENAME OR CHANGE ARGUMENTS/RETURN TYPE.
+# EDIT HERE - update ``model`` in place and honor ``max_batches`` when provided.
 def train_model(
     model: nn.Module,
     loader: Iterable,
@@ -50,6 +53,18 @@ def train_model(
     Returns:
         One finite ``float`` representing mean training loss. Move the model
         back to CPU before returning so FedOps can serialize its parameters.
+
+    Example implementation outline::
+
+        model.to(device).train()
+        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+        for _ in range(epochs):
+            for inputs, targets in loader:
+                # move values to device, compute loss, backward, and optimizer.step()
+                # stop once max_batches is reached when it is not None
+                ...
+        model.to("cpu")
+        return float(mean_loss)
     """
     del model, loader, epochs, learning_rate, device, max_batches
     raise NotImplementedError(
@@ -57,6 +72,8 @@ def train_model(
     )
 
 
+# FEDOPS CONTRACT - DO NOT RENAME OR CHANGE ARGUMENTS/RETURN TYPE.
+# EDIT HERE - use the Task's loss and documented primary/additional metrics.
 def evaluate_model(
     model: nn.Module,
     loader: Iterable,
@@ -71,6 +88,10 @@ def evaluate_model(
         two values are finite floats and ``additional_metrics`` is a mapping of
         metric names to finite float values. The primary metric may be accuracy,
         F1, MAE, RMSE, or another Task-appropriate measure documented in README.
+
+    Example return::
+
+        return float(mean_loss), float(accuracy), {"weighted_f1": float(f1)}
     """
     del model, loader, device, max_batches
     raise NotImplementedError(
@@ -78,7 +99,9 @@ def evaluate_model(
     )
 
 
-# FIXED MODEL RELEASE AND FEDOPS ADAPTERS -------------------------------------
+# FEDOPS RUNTIME - DO NOT EDIT -------------------------------------------------
+# Everything below is shared Baseline integration code. It validates the user hooks,
+# exports/loads Model Releases, and adapts them to the FedOps 1.2 callback contract.
 
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()

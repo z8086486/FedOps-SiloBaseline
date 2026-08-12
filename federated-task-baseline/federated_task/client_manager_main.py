@@ -1,4 +1,4 @@
-"""FedOps 1.2-compatible communication manager for an authorized run."""
+"""FEDOPS RUNTIME FILE - fixed communication manager; Task authors do not edit."""
 
 from __future__ import annotations
 

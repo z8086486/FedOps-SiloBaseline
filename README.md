@@ -13,7 +13,7 @@ tests/                    Baseline maintainer tests; not published
 tools/                    release exporter; not published
 ```
 
-The 0.5 starter is an implementation-contract template rather than an MNIST example.
+The 0.6 starter is a guided implementation-contract template rather than an MNIST example.
 It supports:
 
 - fixed, documented user hooks for model, data, training, readiness probes, and Tool AI
@@ -38,7 +38,7 @@ federated-task-baseline/.venv/bin/python tools/build_release.py
 
 ## Release policy
 
-- Current development release: `federated-task-baseline@0.5.0`
+- Current development release: `federated-task-baseline@0.6.0`
 - Existing releases remain available through Git history and existing Web/S3 tasks.
 - A release is immutable. Changes require a new version.
 - Raw datasets, `.venv`, local artifacts, credentials, and readiness run details are

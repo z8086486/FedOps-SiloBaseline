@@ -1,4 +1,4 @@
-"""Single FedOps Federated Task command-line entrypoint."""
+"""FEDOPS RUNTIME FILE - fixed Task CLI entrypoint; normal Task authors do not edit."""
 
 from __future__ import annotations
 

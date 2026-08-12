@@ -13,7 +13,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "federated-task-baseline"
-DEFAULT_OUTPUT = ROOT / "dist" / "federated-task-baseline-0.5.0"
+DEFAULT_OUTPUT = ROOT / "dist" / "federated-task-baseline-0.6.0"
 FORBIDDEN_PARTS = {".git", ".venv", "__pycache__", ".fedops-studio", "dataset", "datasets"}
 
 
@@ -82,8 +82,8 @@ def build_manifest() -> dict[str, Any]:
         "schema_version": 2,
         "baseline": {
             "name": "federated-task-baseline",
-            "release_version": "0.5.0",
-            "template_revision": 2,
+            "release_version": "0.6.0",
+            "template_revision": 1,
         },
         "compatibility": {
             "python": ">=3.10,<3.13",

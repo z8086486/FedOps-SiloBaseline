@@ -1,4 +1,4 @@
-"""Verify Registry release or participant readiness using the real FedOps contract."""
+"""FEDOPS RUNTIME FILE - fixed Release/Participation Readiness implementation."""
 
 from __future__ import annotations
 

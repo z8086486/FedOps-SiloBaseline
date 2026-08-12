@@ -1,21 +1,24 @@
-# User-editable FedOps Federated Task configuration.
+# USER-EDITABLE VALUES with FIXED REQUIRED KEYS.
+# Keep key names/sections. Replace values and add model constructor values as needed.
 random_seed: 42
 learning_rate: 0.001
 
 # FedOps 1.2-compatible transport type. This Baseline currently supports PyTorch.
 model_type: Pytorch
 model:
-  # Add only the constructor values consumed by model.build_model(config).
+  # EDIT: replace name and add only values consumed by model.build_model(config).
+  # Example: input_size: 8, output_size: 2
   name: replace-with-model-name
 
 dataset:
+  # EDIT: logical name and local default. Agent Studio supplies the actual binding.
   name: replace-with-dataset-name
   # Agent Studio overrides this with a local data binding for owner/participant runs.
   root: ./dataset
   validation_split: 0.2
   download: false
 
-# FedOps Web/Agent Studio inject the actual runtime key when a run starts.
+# FIXED PLACEHOLDER: Web/Agent Studio inject the actual runtime Task ID at run time.
 task_id: task_id
 
 wandb:
@@ -30,6 +33,7 @@ num_rounds: 2
 clients_per_round: 1
 
 server:
+  # BASELINE RUNTIME DEFAULTS: change only with an explicit FedOps strategy design.
   strategy:
     _target_: flwr.server.strategy.FedAvg
     fraction_fit: 0.00001
@@ -39,4 +43,5 @@ server:
     min_evaluate_clients: ${clients_per_round}
 
 runtime:
+  # Local communication-manager container port. Agent Studio maps the host side.
   manager_port: 8004

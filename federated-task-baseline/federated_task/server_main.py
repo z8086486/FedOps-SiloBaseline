@@ -1,4 +1,4 @@
-"""FedOps 1.2-compatible aggregation-server entrypoint for this Task."""
+"""FEDOPS RUNTIME FILE - fixed aggregation-server entrypoint; authors do not edit."""
 
 from __future__ import annotations
 

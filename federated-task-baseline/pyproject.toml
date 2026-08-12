@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fedops-federated-task"
-version = "0.5.0"
-description = "Implementation-contract template for a FedOps Federated Task"
+version = "0.6.0"
+description = "Guided implementation-contract template for a FedOps Federated Task"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 license = "Apache-2.0"

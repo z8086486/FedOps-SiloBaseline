@@ -1,4 +1,4 @@
-"""FedOps client using the same model/data/train functions as local development."""
+"""FEDOPS RUNTIME FILE - fixed client entrypoint; normal Task authors do not edit."""
 
 from __future__ import annotations
 

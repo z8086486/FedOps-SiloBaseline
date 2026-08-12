@@ -89,7 +89,7 @@ class BaselineContractTest(unittest.TestCase):
 
     def test_release_manifest_contains_only_workspace_files(self):
         manifest = build_manifest()
-        self.assertEqual(manifest["baseline"]["release_version"], "0.5.0")
+        self.assertEqual(manifest["baseline"]["release_version"], "0.6.0")
         paths = {entry["path"] for entry in manifest["files"]}
         self.assertIn("federated_task/task_check.py", paths)
         self.assertIn("federated_task/server_main.py", paths)
@@ -109,6 +109,24 @@ class BaselineContractTest(unittest.TestCase):
     def test_fedops_client_and_server_entrypoints_are_present(self):
         self.assertTrue(callable(client_main))
         self.assertTrue(callable(server_main))
+
+    def test_authoring_boundaries_are_visible_in_workspace_files(self):
+        readme = (BASELINE / "README.md").read_text(encoding="utf-8")
+        self.assertIn("## Start here", readme)
+        self.assertIn("## What can be edited", readme)
+        self.assertIn("## Fixed Python contracts", readme)
+        for relative in (
+            "federated_task/model.py",
+            "federated_task/data_preparation.py",
+            "federated_task/training.py",
+            "federated_task/tool.py",
+        ):
+            source = (BASELINE / relative).read_text(encoding="utf-8")
+            self.assertIn("FEDOPS CONTRACT", source, relative)
+        training_source = (BASELINE / "federated_task/training.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("FEDOPS RUNTIME - DO NOT EDIT", training_source)
 
 
 if __name__ == "__main__":
