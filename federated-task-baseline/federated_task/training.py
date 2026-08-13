@@ -215,6 +215,7 @@ def export_initial_model(
         "format": "safetensors",
         "artifact": MODEL_PATH.name,
         "architecture": "federated_task.model:build_model",
+        "displayName": str(config["model"]["display_name"]),
         "size": MODEL_PATH.stat().st_size,
         "sha256": _sha256(MODEL_PATH),
         "parameterSignature": signature,

@@ -1,48 +1,40 @@
-# USER-EDITABLE VALUES with FIXED REQUIRED KEYS.
-# Keep key names/sections. Replace values and add model constructor values as needed.
+# Federated Task Release configuration (Baseline 0.8).
+# This file owns the verified model, data contract, and local-training defaults.
+# Web Server Management supplies each run's rounds/clients/strategy as a Campaign overlay.
+schema_version: 2
 random_seed: 42
-learning_rate: 0.001
 
 # FedOps 1.2-compatible transport type. This Baseline currently supports PyTorch.
 model_type: Pytorch
 model:
-  # EDIT: replace name and add only values consumed by model.build_model(config).
+  # EDIT: this is the model name shown on the Registry card. It may be shared by other Tasks.
+  display_name: replace-with-primary-model-name
+  # EDIT: constructor identifier plus values consumed by model.build_model(config).
   # Example: input_size: 8, output_size: 2
   name: replace-with-model-name
 
 dataset:
-  # EDIT: logical name and local default. Agent Studio supplies the actual binding.
+  # EDIT: logical contract name. Do not put a participant filesystem path here.
   name: replace-with-dataset-name
-  # Agent Studio overrides this with a local data binding for owner/participant runs.
-  root: ./dataset
   validation_split: 0.2
   download: false
 
-# FIXED PLACEHOLDER: Web/Agent Studio inject the actual runtime Task ID at run time.
-task_id: task_id
+local_training:
+  # EDIT and verify these values with Agent Studio Local Training.
+  learning_rate: 0.001
+  epochs: 1
+  batch_size: 32
 
-wandb:
-  use: false
-  key: ""
-  account: ""
-  project: ${dataset.name}_${task_id}
+federation:
+  # The first 0.8 contract intentionally supports only the strategy tested by this Baseline.
+  supported_strategies:
+  - name: FedAvg
+    target: flwr.server.strategy.FedAvg
+  recommended_campaign:
+    rounds: 2
+    clients_per_round: 1
+    strategy: FedAvg
 
-num_epochs: 1
-batch_size: 32
-num_rounds: 2
-clients_per_round: 1
-
-server:
-  # BASELINE RUNTIME DEFAULTS: change only with an explicit FedOps strategy design.
-  strategy:
-    _target_: flwr.server.strategy.FedAvg
-    fraction_fit: 0.00001
-    fraction_evaluate: 0.000001
-    min_fit_clients: ${clients_per_round}
-    min_available_clients: ${clients_per_round}
-    min_evaluate_clients: ${clients_per_round}
-
-runtime:
-  # FIXED DEFAULTS: Agent Studio assigns free local ports when participation starts.
-  manager_port: 8004
-  client_port: 8003
+# Monitoring credentials and local paths are local Agent Studio state, never Release values.
+monitoring:
+  wandb: false

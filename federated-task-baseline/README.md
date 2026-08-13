@@ -8,7 +8,9 @@ participants call the fixed names and arguments exactly as shown below.
 
 For a new model and dataset, edit in this order:
 
-1. `federated_task/conf/config.yaml`: describe the model, dataset, and training values.
+1. `federated_task/conf/config.yaml`: describe the Primary Model, data contract, verified
+   local-training defaults, and supported federation strategies. Web Server Management
+   supplies the actual rounds/clients/strategy for each Campaign.
 2. `federated_task/model.py`: define the model and its input/output behavior.
 3. `federated_task/data_preparation.py`: bind local data and create identical batch
    structures for real data and non-sensitive readiness probes.
@@ -35,7 +37,7 @@ Agent Builder import them directly.
 | File | User action | Fixed boundary |
 | --- | --- | --- |
 | `README.md` | Replace Task description and usage | Keep `Intended use`, `Local data setup`, `Federated participation`, `Limitations`, and `Privacy` headings |
-| `conf/config.yaml` | Replace model/dataset values and training parameters | Keep required keys; `model_type` is currently `Pytorch` |
+| `conf/config.yaml` | Replace Primary Model, dataset contract, and local-training defaults | Keep required keys; runtime Campaign and local paths are injected |
 | `model.py` | Add model class and implement three hooks | Hook names, arguments, and return contracts |
 | `data_preparation.py` | Implement feature description, local loaders, probes, and server validation loader | Six hook names, arguments, local-data boundary, and batch contract |
 | `training.py` | Implement `train_model` and `evaluate_model` | Function signatures and everything below `FEDOPS RUNTIME - DO NOT EDIT` |
@@ -86,6 +88,10 @@ One edit often affects several files:
   used by local and federated training.
 - `manifest.json` must describe the exact JSON consumed and returned by `predict()`.
 - Model constructor settings in `conf/config.yaml` must match `build_model(config)`.
+- `model.display_name` is the Registry-facing Primary Model name. It is not a global
+  identifier; `@owner/task-slug` identifies the Federated Task.
+- Do not add local data paths, Task IDs, ports, server endpoints, or credentials to
+  `config.yaml`. Agent Studio and Web inject those values at execution time.
 
 ## Intended use
 

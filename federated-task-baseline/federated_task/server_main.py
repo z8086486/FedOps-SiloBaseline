@@ -4,18 +4,18 @@ from __future__ import annotations
 
 import os
 
-import hydra
-from omegaconf import DictConfig
+from omegaconf import OmegaConf
 
 from fedops.server.app import FLServer
 
 from .data_preparation import gl_model_torch_validation
+from .config import load_config
 from .model import build_model
 from .training import MODEL_PATH, load_released_model, test_torch
 
 
-@hydra.main(config_path="conf", config_name="config", version_base=None)
-def main(config: DictConfig) -> None:
+def main() -> None:
+    config = OmegaConf.create(load_config())
     model = load_released_model() if MODEL_PATH.is_file() else build_model(dict(config.model))
     data_root = os.environ.get("FEDOPS_SERVER_DATA_DIR", str(config.dataset.root))
     validation_loader = gl_model_torch_validation(

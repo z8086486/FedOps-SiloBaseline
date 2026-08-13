@@ -13,7 +13,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(BASELINE))
 
 from federated_task.client_main import main as client_main
-from federated_task.config import load_config, validate_config
+from federated_task.config import load_config, resolve_runtime_config, validate_config
 from federated_task.data_preparation import (
     build_contract_probe,
     build_smoke_loaders,
@@ -33,9 +33,31 @@ class BaselineContractTest(unittest.TestCase):
         self.assertEqual(config["model_type"], "Pytorch")
         self.assertEqual(config["dataset"]["name"], "replace-with-dataset-name")
         self.assertNotIn("output_size", config["model"])
-        config["batch_size"] = 0
+        config["local_training"]["batch_size"] = 0
         with self.assertRaisesRegex(ValueError, "batch_size"):
             validate_config(config)
+
+    def test_campaign_overlay_is_validated_and_normalized(self):
+        config = load_config()
+        source = {
+            key: config[key]
+            for key in (
+                "schema_version", "random_seed", "model_type", "model", "dataset",
+                "local_training", "federation", "monitoring",
+            )
+        }
+        runtime = resolve_runtime_config(source, {
+            "schemaVersion": 1,
+            "rounds": 7,
+            "clientsPerRound": 3,
+            "strategy": {"name": "FedAvg", "parameters": {"fraction_fit": 0.8}},
+        })
+        self.assertEqual(runtime["num_rounds"], 7)
+        self.assertEqual(runtime["clients_per_round"], 3)
+        self.assertEqual(runtime["server"]["strategy"]["min_fit_clients"], 3)
+        self.assertEqual(runtime["server"]["strategy"]["fraction_fit"], 0.8)
+        with self.assertRaisesRegex(ValueError, "not supported"):
+            resolve_runtime_config(source, {"strategy": "FedAdam"})
 
     def test_user_function_signatures_are_fixed(self):
         self.assertEqual(
@@ -89,7 +111,7 @@ class BaselineContractTest(unittest.TestCase):
 
     def test_release_manifest_contains_only_workspace_files(self):
         manifest = build_manifest()
-        self.assertEqual(manifest["baseline"]["release_version"], "0.7.0")
+        self.assertEqual(manifest["baseline"]["release_version"], "0.8.0")
         self.assertEqual(manifest["compatibility"]["agent_studio_task_schema"], 3)
         self.assertEqual(manifest["compatibility"]["fedops_participation"], "==1.1.30.15")
         paths = {entry["path"] for entry in manifest["files"]}

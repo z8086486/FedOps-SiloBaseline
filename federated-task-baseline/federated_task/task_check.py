@@ -42,7 +42,7 @@ from .training import (
 )
 
 
-CHECKER_VERSION = "2.0.0"
+CHECKER_VERSION = "3.0.0"
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 FORBIDDEN_PARTS = {".git", ".venv", "__pycache__", ".fedops-studio", "dataset", "datasets"}
 REQUIRED_README_HEADINGS = {
@@ -259,6 +259,33 @@ def check_readiness(
     except (TypeError, ValueError) as error:
         raise ValueError("Tool output must be JSON-serializable") from error
 
+    tool_manifest = json.loads(
+        (PROJECT_ROOT / "federated_task/manifest.json").read_text(encoding="utf-8")
+    )
+    model_display_name = str(config["model"].get("display_name") or "").strip()
+    if not model_display_name or model_display_name.startswith("replace-with-"):
+        raise ValueError("config.yaml: model.display_name must be finalized before Release Readiness")
+    registry_catalog = {
+        "schemaVersion": 1,
+        "primaryModel": {
+            "displayName": model_display_name,
+            "framework": model_manifest.get("framework"),
+            "format": model_manifest.get("format"),
+            "parameterSignatureFingerprint": signature["fingerprint"],
+        },
+        "dataContract": contract,
+        "outputContract": output_summary,
+        "tool": {
+            "name": tool_manifest.get("name"),
+            "description": tool_manifest.get("description"),
+        },
+        "federation": {
+            "supportedStrategies": [
+                item["name"] for item in config["federation"]["supported_strategies"]
+            ],
+            "recommendedCampaign": config["federation"]["recommended_campaign"],
+        },
+    }
     return {
         "schemaVersion": 1,
         "ok": True,
@@ -269,6 +296,7 @@ def check_readiness(
         "taskId": os.environ.get("FEDOPS_TASK_ID") or None,
         "releaseId": os.environ.get("FEDOPS_RELEASE_ID") or None,
         "modelVersionId": os.environ.get("FEDOPS_MODEL_VERSION_ID") or None,
+        "registryCatalog": registry_catalog,
         "checks": {
             "project": project,
             "modelArtifactSha256": model_manifest["sha256"],
