@@ -112,7 +112,7 @@ class BaselineContractTest(unittest.TestCase):
 
     def test_release_manifest_contains_only_workspace_files(self):
         manifest = build_manifest()
-        self.assertEqual(manifest["baseline"]["release_version"], "0.9.0")
+        self.assertEqual(manifest["baseline"]["release_version"], "0.10.0")
         self.assertEqual(manifest["compatibility"]["agent_studio_task_schema"], 3)
         self.assertEqual(manifest["compatibility"]["fedops_participation"], "==1.1.30.15")
         paths = {entry["path"] for entry in manifest["files"]}
@@ -123,10 +123,13 @@ class BaselineContractTest(unittest.TestCase):
         self.assertIn("federated_task/local_training/model.py", paths)
         self.assertIn("federated_task/tool_ai/manifest.json", paths)
         self.assertIn("model_release/manifest.json", paths)
+        self.assertIn("requirements.txt", paths)
         self.assertFalse(any(path.startswith("tests/") or path.startswith("tools/") for path in paths))
         self.assertTrue(by_path["federated_task/local_training/model.py"]["editable"])
         self.assertTrue(by_path["federated_task/tool_ai/manifest.json"]["editable"])
-        self.assertTrue(by_path["pyproject.toml"]["editable"])
+        self.assertTrue(by_path["requirements.txt"]["editable"])
+        self.assertFalse(by_path["pyproject.toml"]["editable"])
+        self.assertFalse(by_path["uv.lock"]["editable"])
         self.assertFalse(by_path["federated_task/federated_learning/client_main.py"]["editable"])
         self.assertFalse(by_path["federated_task/runtime/model_release.py"]["editable"])
         for entry in manifest["files"]:
@@ -149,6 +152,7 @@ class BaselineContractTest(unittest.TestCase):
         self.assertIn("## Start here", readme)
         self.assertIn("## What can be edited", readme)
         self.assertIn("## Fixed Python contracts", readme)
+        self.assertIn("requirements.txt", readme)
         for relative in (
             "federated_task/local_training/model.py",
             "federated_task/local_training/data_preparation.py",

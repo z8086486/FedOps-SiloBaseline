@@ -12,10 +12,31 @@ from omegaconf import OmegaConf
 
 DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent / "conf" / "config.yaml"
 
+# FEDOPS RUNTIME DEFAULTS - not an Owner editing surface. Web Server Management
+# supplies each run's rounds, clients, and strategy through a Campaign overlay.
+RUNTIME_DEFAULTS: dict[str, Any] = {
+    "schema_version": 2,
+    "model_type": "Pytorch",
+    "federation": {
+        "supported_strategies": [
+            {"name": "FedAvg", "target": "flwr.server.strategy.FedAvg"},
+        ],
+        "recommended_campaign": {
+            "rounds": 2,
+            "clients_per_round": 1,
+            "strategy": "FedAvg",
+        },
+    },
+    "monitoring": {"wandb": False},
+}
+
 
 def load_config(path: Path | None = None) -> dict[str, Any]:
     selected = path or DEFAULT_CONFIG_PATH
-    source = OmegaConf.to_container(OmegaConf.load(selected), resolve=True)
+    source = OmegaConf.to_container(
+        OmegaConf.merge(RUNTIME_DEFAULTS, OmegaConf.load(selected)),
+        resolve=True,
+    )
     if not isinstance(source, dict):
         raise ValueError("config.yaml must contain an object")
     validate_config(source)

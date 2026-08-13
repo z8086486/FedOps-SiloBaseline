@@ -1,31 +1,18 @@
 [build-system]
-requires = ["hatchling==1.27.0"]
+requires = ["hatchling==1.27.0", "hatch-requirements-txt==0.4.1"]
 build-backend = "hatchling.build"
 
 [project]
 name = "fedops-federated-task"
-version = "0.9.0"
+version = "0.10.0"
 description = "Functionally organized implementation-contract template for a FedOps Federated Task"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 license = "Apache-2.0"
-dependencies = [
-    "hydra-core==1.3.2",
-    "numpy==1.26.4",
-    "omegaconf==2.3.0",
-    "packaging==25.0",
-    "pyyaml==6.0.2",
-    "safetensors==0.6.2",
-    "torch==2.8.0",
-]
+dynamic = ["dependencies"]
 
-[project.optional-dependencies]
-participate = [
-    "fedops==1.1.30.15",
-    "fastapi==0.116.1",
-    "requests==2.32.4",
-    "uvicorn==0.35.0",
-]
+[tool.hatch.metadata.hooks.requirements_txt]
+files = ["requirements.txt"]
 
 [project.scripts]
 fedops-task = "federated_task.main:main"

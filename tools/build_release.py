@@ -15,7 +15,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "federated-task-baseline"
-DEFAULT_OUTPUT = ROOT / "dist" / "federated-task-baseline-0.9.0"
+DEFAULT_OUTPUT = ROOT / "dist" / "federated-task-baseline-0.10.0"
 FORBIDDEN_PARTS = {".git", ".venv", "__pycache__", ".fedops-studio", "dataset", "datasets"}
 
 
@@ -33,7 +33,9 @@ def _metadata(relative: str) -> dict[str, Any]:
     if relative == "LICENSE":
         return {"role": "license", "editable": False, "content_type": "text/plain"}
     if relative == "pyproject.toml":
-        return {"role": "task_definition", "editable": True, "content_type": "application/toml"}
+        return {"role": "task_definition", "editable": False, "content_type": "application/toml"}
+    if relative == "requirements.txt":
+        return {"role": "task_dependencies", "editable": True, "content_type": "text/plain"}
     if relative == "uv.lock":
         return {"role": "dependency_lock", "editable": False, "content_type": "application/toml"}
     if relative == "federated_task/conf/config.yaml":
@@ -78,13 +80,15 @@ def build_manifest() -> dict[str, Any]:
             "size": path.stat().st_size,
             "sha256": _sha256(path),
         })
-    if not entries or not any(entry["path"] == "uv.lock" for entry in entries):
-        raise RuntimeError("Baseline source is incomplete; uv.lock is required")
+    required = {"pyproject.toml", "requirements.txt", "uv.lock"}
+    present = {entry["path"] for entry in entries}
+    if not entries or not required.issubset(present):
+        raise RuntimeError("Baseline source is incomplete; Python dependency contract is required")
     return {
         "schema_version": 2,
         "baseline": {
             "name": "federated-task-baseline",
-            "release_version": "0.9.0",
+            "release_version": "0.10.0",
             "template_revision": 1,
         },
         "compatibility": {
@@ -136,7 +140,7 @@ def export_release(output: Path = DEFAULT_OUTPUT) -> Path:
     ).strip()
     provenance = {
         "baseline": "federated-task-baseline",
-        "version": "0.9.0",
+        "version": "0.10.0",
         "revision": 1,
         "sourceCommit": source_commit,
         "manifestSha256": _sha256(manifest_path),

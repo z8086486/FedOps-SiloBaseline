@@ -1,40 +1,40 @@
-# Federated Task Release configuration (Baseline 0.9).
-# This file owns the verified model, data contract, and local-training defaults.
-# Web Server Management supplies each run's rounds/clients/strategy as a Campaign overlay.
-schema_version: 2
+# Federated Task configuration (Baseline 0.10).
+#
+# Only values marked REQUIRED must be completed before Local Training and
+# Release Readiness. FedOps-owned schema, runtime, federation, and monitoring
+# defaults are supplied by federated_task/config.py and are not repeated here.
+
+# OPTIONAL: reproducible model initialization and data splitting.
+# Example: 42
 random_seed: 42
 
-# FedOps 1.2-compatible transport type. This Baseline currently supports PyTorch.
-model_type: Pytorch
+# REQUIRED: model identity and constructor values.
 model:
-  # EDIT: this is the model name shown on the Registry card. It may be shared by other Tasks.
+  # REQUIRED: model name shown on the Registry card.
+  # Example: MNIST Classifier
   display_name: replace-with-primary-model-name
-  # EDIT: constructor identifier plus values consumed by model.build_model(config).
-  # Example: input_size: 8, output_size: 2
-  name: replace-with-model-name
 
+  # OPTIONAL: values consumed by local_training/model.py build_model(config).
+  # Add any Task-specific keys here. Example:
+  # input_channels: 1
+  # output_size: 10
+
+# REQUIRED: local-only participant data contract. Never put a filesystem path here.
 dataset:
-  # EDIT: logical contract name. Do not put a participant filesystem path here.
+  # REQUIRED: logical dataset or input-contract name.
+  # Example: MNIST
   name: replace-with-dataset-name
+
+  # REQUIRED: value greater than 0 and less than 1.
+  # Example: 0.2 means 80% training and 20% validation.
   validation_split: 0.2
+
+  # REQUIRED: whether data_preparation.py may download data when explicitly run.
   download: false
 
+# REQUIRED: defaults used by Local Training and each participant's local epoch.
 local_training:
-  # EDIT and verify these values with Agent Studio Local Training.
+  # Examples: 0.001, 1, 32
   learning_rate: 0.001
   epochs: 1
   batch_size: 32
-
-federation:
-  # The first organized contract intentionally supports only the tested strategy.
-  supported_strategies:
-  - name: FedAvg
-    target: flwr.server.strategy.FedAvg
-  recommended_campaign:
-    rounds: 2
-    clients_per_round: 1
-    strategy: FedAvg
-
-# Monitoring credentials and local paths are local Agent Studio state, never Release values.
-monitoring:
-  wandb: false

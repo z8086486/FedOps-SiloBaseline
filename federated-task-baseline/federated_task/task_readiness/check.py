@@ -82,6 +82,7 @@ def _check_project_files() -> dict[str, Any]:
         "README.md",
         "LICENSE",
         "pyproject.toml",
+        "requirements.txt",
         "uv.lock",
         "federated_task/conf/config.yaml",
         "federated_task/local_training/model.py",
