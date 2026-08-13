@@ -112,7 +112,7 @@ def resolve_runtime_config(
     source: dict[str, Any],
     campaign: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Convert the 0.8 Release contract to the FedOps 1.2-compatible runtime shape."""
+    """Convert the Release contract to the FedOps-compatible runtime shape."""
     selected = campaign if campaign is not None else _campaign_from_environment()
     recommended = source["federation"]["recommended_campaign"]
     selected = selected or {}

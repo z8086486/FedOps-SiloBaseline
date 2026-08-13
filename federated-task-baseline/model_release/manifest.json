@@ -6,9 +6,9 @@
   "framework": "pytorch",
   "format": "safetensors",
   "artifact": "model.safetensors",
-  "architecture": "federated_task.model:build_model",
+  "architecture": "federated_task.local_training.model:build_model",
   "size": null,
   "sha256": null,
   "parameterSignature": null,
-  "inputContract": "federated_task/manifest.json"
+  "inputContract": "federated_task/tool_ai/manifest.json"
 }

@@ -1,4 +1,4 @@
-# Federated Task Release configuration (Baseline 0.8).
+# Federated Task Release configuration (Baseline 0.9).
 # This file owns the verified model, data contract, and local-training defaults.
 # Web Server Management supplies each run's rounds/clients/strategy as a Campaign overlay.
 schema_version: 2
@@ -26,7 +26,7 @@ local_training:
   batch_size: 32
 
 federation:
-  # The first 0.8 contract intentionally supports only the strategy tested by this Baseline.
+  # The first organized contract intentionally supports only the tested strategy.
   supported_strategies:
   - name: FedAvg
     target: flwr.server.strategy.FedAvg

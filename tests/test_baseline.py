@@ -12,18 +12,19 @@ BASELINE = ROOT / "federated-task-baseline"
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(BASELINE))
 
-from federated_task.client_main import main as client_main
 from federated_task.config import load_config, resolve_runtime_config, validate_config
-from federated_task.data_preparation import (
+from federated_task.federated_learning.client_main import main as client_main
+from federated_task.federated_learning.server_main import main as server_main
+from federated_task.local_training.data_preparation import (
     build_contract_probe,
     build_smoke_loaders,
     describe_input_features,
     load_partition,
 )
-from federated_task.model import build_model, run_model, validate_model_output
-from federated_task.server_main import main as server_main
-from federated_task.tool import build_tool_smoke_payload, predict
-from federated_task.training import evaluate_model, normalize_evaluation, train_model
+from federated_task.local_training.model import build_model, run_model, validate_model_output
+from federated_task.local_training.training import evaluate_model, train_model
+from federated_task.runtime.model_release import normalize_evaluation
+from federated_task.tool_ai.tool import build_tool_smoke_payload, predict
 from tools.build_release import build_manifest
 
 
@@ -111,24 +112,33 @@ class BaselineContractTest(unittest.TestCase):
 
     def test_release_manifest_contains_only_workspace_files(self):
         manifest = build_manifest()
-        self.assertEqual(manifest["baseline"]["release_version"], "0.8.0")
+        self.assertEqual(manifest["baseline"]["release_version"], "0.9.0")
         self.assertEqual(manifest["compatibility"]["agent_studio_task_schema"], 3)
         self.assertEqual(manifest["compatibility"]["fedops_participation"], "==1.1.30.15")
         paths = {entry["path"] for entry in manifest["files"]}
-        self.assertIn("federated_task/task_check.py", paths)
-        self.assertIn("federated_task/server_main.py", paths)
-        self.assertIn("federated_task/client_main.py", paths)
+        by_path = {entry["path"]: entry for entry in manifest["files"]}
+        self.assertIn("federated_task/task_readiness/check.py", paths)
+        self.assertIn("federated_task/federated_learning/server_main.py", paths)
+        self.assertIn("federated_task/federated_learning/client_main.py", paths)
+        self.assertIn("federated_task/local_training/model.py", paths)
+        self.assertIn("federated_task/tool_ai/manifest.json", paths)
         self.assertIn("model_release/manifest.json", paths)
         self.assertFalse(any(path.startswith("tests/") or path.startswith("tools/") for path in paths))
+        self.assertTrue(by_path["federated_task/local_training/model.py"]["editable"])
+        self.assertTrue(by_path["federated_task/tool_ai/manifest.json"]["editable"])
+        self.assertTrue(by_path["pyproject.toml"]["editable"])
+        self.assertFalse(by_path["federated_task/federated_learning/client_main.py"]["editable"])
+        self.assertFalse(by_path["federated_task/runtime/model_release.py"]["editable"])
         for entry in manifest["files"]:
             self.assertTrue((BASELINE / entry["path"]).is_file())
 
     def test_tool_manifest_is_valid_json_template(self):
         manifest = json.loads(
-            (BASELINE / "federated_task/manifest.json").read_text(encoding="utf-8")
+            (BASELINE / "federated_task/tool_ai/manifest.json").read_text(encoding="utf-8")
         )
-        self.assertEqual(manifest["entrypoint"], "federated_task.tool:predict")
-        self.assertIn("replace_with_input", manifest["input"]["properties"])
+        self.assertEqual(manifest["features"], ["replace_with_feature_name"])
+        self.assertIn("description", manifest["output"])
+        self.assertEqual(manifest["output"]["labels"], [])
 
     def test_fedops_client_and_server_entrypoints_are_present(self):
         self.assertTrue(callable(client_main))
@@ -140,17 +150,20 @@ class BaselineContractTest(unittest.TestCase):
         self.assertIn("## What can be edited", readme)
         self.assertIn("## Fixed Python contracts", readme)
         for relative in (
-            "federated_task/model.py",
-            "federated_task/data_preparation.py",
-            "federated_task/training.py",
-            "federated_task/tool.py",
+            "federated_task/local_training/model.py",
+            "federated_task/local_training/data_preparation.py",
+            "federated_task/local_training/training.py",
+            "federated_task/tool_ai/tool.py",
         ):
             source = (BASELINE / relative).read_text(encoding="utf-8")
             self.assertIn("FEDOPS CONTRACT", source, relative)
-        training_source = (BASELINE / "federated_task/training.py").read_text(
+        runtime_source = (BASELINE / "federated_task/runtime/model_release.py").read_text(
             encoding="utf-8"
         )
-        self.assertIn("FEDOPS RUNTIME - DO NOT EDIT", training_source)
+        self.assertIn("FEDOPS RUNTIME FILE", runtime_source)
+        self.assertNotIn("FEDOPS RUNTIME - DO NOT EDIT", (
+            BASELINE / "federated_task/local_training/training.py"
+        ).read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

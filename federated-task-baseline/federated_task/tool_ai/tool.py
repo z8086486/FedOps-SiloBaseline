@@ -12,7 +12,7 @@ def predict(payload: dict[str, Any], model_path: str | Path | None = None) -> di
     """Run one inference with an Initial or Global Model release.
 
     Args:
-        payload: JSON object matching ``federated_task/manifest.json`` input.
+        payload: JSON object containing every feature named in ``manifest.json``.
         model_path: Optional selected model artifact. When omitted, load the
         Task's local ``model_release/model.safetensors`` artifact.
 
@@ -32,7 +32,7 @@ def predict(payload: dict[str, Any], model_path: str | Path | None = None) -> di
     """
     del payload, model_path
     raise NotImplementedError(
-        "Implement federated_task.tool.predict() and match manifest.json"
+        "Implement federated_task.tool_ai.tool.predict() and match manifest.json"
     )
 
 
@@ -46,5 +46,5 @@ def build_tool_smoke_payload() -> dict[str, Any]:
         return {"features": [0.0] * 8}
     """
     raise NotImplementedError(
-        "Implement federated_task.tool.build_tool_smoke_payload()"
+        "Implement federated_task.tool_ai.tool.build_tool_smoke_payload()"
     )

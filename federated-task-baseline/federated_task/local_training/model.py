@@ -53,7 +53,7 @@ def build_model(config: Mapping[str, Any] | None = None) -> nn.Module:
     """
     del config
     raise NotImplementedError(
-        "Implement federated_task.model.build_model() with the Task model architecture"
+        "Implement federated_task.local_training.model.build_model() with the Task model architecture"
     )
 
 
@@ -77,7 +77,7 @@ def run_model(model: nn.Module, inputs: Any) -> Any:
     """
     del model, inputs
     raise NotImplementedError(
-        "Implement federated_task.model.run_model() for the Task input structure"
+        "Implement federated_task.local_training.model.run_model() for the Task input structure"
     )
 
 
@@ -106,5 +106,5 @@ def validate_model_output(output: Any, config: Mapping[str, Any]) -> dict[str, A
     """
     del output, config
     raise NotImplementedError(
-        "Implement federated_task.model.validate_model_output() for readiness"
+        "Implement federated_task.local_training.model.validate_model_output() for readiness"
     )

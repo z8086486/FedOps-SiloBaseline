@@ -21,29 +21,28 @@ from fedops.client.parameter_contract import (
     verify_parameter_round_trip,
 )
 
-from .config import load_config
-from .data_preparation import (
+from ..config import load_config
+from ..local_training.data_preparation import (
     build_contract_probe,
     build_smoke_loaders,
     describe_input_features,
     load_partition,
 )
-from .model import build_model, run_model, validate_model_output
-from .tool import build_tool_smoke_payload, predict
-from .training import (
+from ..local_training.model import build_model, run_model, validate_model_output
+from ..local_training.training import evaluate_model, train_model
+from ..runtime.model_release import (
     MODEL_MANIFEST_PATH,
     MODEL_PATH,
-    evaluate_model,
     load_released_model,
     normalize_evaluation,
     test_torch,
-    train_model,
     train_torch,
 )
+from ..tool_ai.tool import build_tool_smoke_payload, predict
 
 
-CHECKER_VERSION = "3.0.0"
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+CHECKER_VERSION = "4.0.0"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 FORBIDDEN_PARTS = {".git", ".venv", "__pycache__", ".fedops-studio", "dataset", "datasets"}
 REQUIRED_README_HEADINGS = {
     "## Intended use",
@@ -85,15 +84,15 @@ def _check_project_files() -> dict[str, Any]:
         "pyproject.toml",
         "uv.lock",
         "federated_task/conf/config.yaml",
-        "federated_task/model.py",
-        "federated_task/data_preparation.py",
-        "federated_task/training.py",
-        "federated_task/client_main.py",
-        "federated_task/client_manager_main.py",
-        "federated_task/server_main.py",
-        "federated_task/task_check.py",
-        "federated_task/manifest.json",
-        "federated_task/tool.py",
+        "federated_task/local_training/model.py",
+        "federated_task/local_training/data_preparation.py",
+        "federated_task/local_training/training.py",
+        "federated_task/federated_learning/client_main.py",
+        "federated_task/federated_learning/client_manager_main.py",
+        "federated_task/federated_learning/server_main.py",
+        "federated_task/task_readiness/check.py",
+        "federated_task/tool_ai/manifest.json",
+        "federated_task/tool_ai/tool.py",
         "model_release/manifest.json",
     ]
     missing = [value for value in required if not (PROJECT_ROOT / value).is_file()]
@@ -125,6 +124,43 @@ def _load_model_manifest(model_type: str) -> dict[str, Any]:
     if manifest.get("parameterSignature", {}).get("fingerprint") != signature["fingerprint"]:
         raise ValueError("model parameter signature does not match FedOps transport")
     return manifest
+
+
+def _load_tool_manifest() -> dict[str, Any]:
+    """Validate the user-facing Tool AI description contract."""
+    path = PROJECT_ROOT / "federated_task" / "tool_ai" / "manifest.json"
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(manifest, dict):
+        raise ValueError("tool_ai/manifest.json must contain a JSON object")
+    description = str(manifest.get("description") or "").strip()
+    if not description:
+        raise ValueError("tool_ai/manifest.json requires description")
+    features = manifest.get("features")
+    if (
+        not isinstance(features, list)
+        or not features
+        or any(not isinstance(value, str) or not value.strip() for value in features)
+    ):
+        raise ValueError("tool_ai/manifest.json features must be a non-empty string list")
+    normalized_features = [value.strip() for value in features]
+    if len(normalized_features) != len(set(normalized_features)):
+        raise ValueError("tool_ai/manifest.json features must be unique")
+    if any(value.startswith("replace_with_") for value in normalized_features):
+        raise ValueError("tool_ai/manifest.json feature placeholders must be replaced")
+    output = manifest.get("output")
+    if not isinstance(output, dict) or not str(output.get("description") or "").strip():
+        raise ValueError("tool_ai/manifest.json output requires description")
+    labels = output.get("labels")
+    if not isinstance(labels, list) or any(not isinstance(value, str) for value in labels):
+        raise ValueError("tool_ai/manifest.json output.labels must be a string list")
+    return {
+        "description": description,
+        "features": normalized_features,
+        "output": {
+            "description": str(output["description"]).strip(),
+            "labels": labels,
+        },
+    }
 
 
 def _construct_fedops_client(model, config, train_loader, validation_loader) -> int:
@@ -251,7 +287,19 @@ def check_readiness(
     expected = expected_parameter_signature or model_manifest["parameterSignature"]["fingerprint"]
     if signature["fingerprint"] != expected:
         raise ValueError("local parameter signature does not match the Published Task")
-    tool_result = predict(build_tool_smoke_payload())
+    tool_manifest = _load_tool_manifest()
+    tool_payload = build_tool_smoke_payload()
+    if not isinstance(tool_payload, dict):
+        raise ValueError("Tool smoke payload must be a dictionary")
+    missing_tool_features = [
+        feature for feature in tool_manifest["features"] if feature not in tool_payload
+    ]
+    if missing_tool_features:
+        raise ValueError(
+            "Tool smoke payload is missing manifest features: "
+            + ", ".join(missing_tool_features)
+        )
+    tool_result = predict(tool_payload)
     if not isinstance(tool_result, dict):
         raise ValueError("Tool predict() must return a dictionary")
     try:
@@ -259,9 +307,6 @@ def check_readiness(
     except (TypeError, ValueError) as error:
         raise ValueError("Tool output must be JSON-serializable") from error
 
-    tool_manifest = json.loads(
-        (PROJECT_ROOT / "federated_task/manifest.json").read_text(encoding="utf-8")
-    )
     model_display_name = str(config["model"].get("display_name") or "").strip()
     if not model_display_name or model_display_name.startswith("replace-with-"):
         raise ValueError("config.yaml: model.display_name must be finalized before Release Readiness")
@@ -276,8 +321,10 @@ def check_readiness(
         "dataContract": contract,
         "outputContract": output_summary,
         "tool": {
-            "name": tool_manifest.get("name"),
-            "description": tool_manifest.get("description"),
+            "name": model_display_name,
+            "description": tool_manifest["description"],
+            "features": tool_manifest["features"],
+            "output": tool_manifest["output"],
         },
         "federation": {
             "supportedStrategies": [

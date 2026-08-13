@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fedops-federated-task"
-version = "0.8.0"
-description = "Guided implementation-contract template for a FedOps Federated Task"
+version = "0.9.0"
+description = "Functionally organized implementation-contract template for a FedOps Federated Task"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 license = "Apache-2.0"
@@ -29,9 +29,9 @@ participate = [
 
 [project.scripts]
 fedops-task = "federated_task.main:main"
-fedops-task-client = "federated_task.client_main:main"
-fedops-task-client-manager = "federated_task.client_manager_main:main"
-fedops-task-server = "federated_task.server_main:main"
+fedops-task-client = "federated_task.federated_learning.client_main:main"
+fedops-task-client-manager = "federated_task.federated_learning.client_manager_main:main"
+fedops-task-server = "federated_task.federated_learning.server_main:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["federated_task"]
@@ -50,13 +50,14 @@ fedops = { git = "https://github.com/gachon-CCLab/FedOps.git", rev = "fde3137f6e
 schema-version = 3
 task-type = "silo"
 runtime-module = "federated_task.main"
-client-module = "federated_task.client_main"
-client-manager-module = "federated_task.client_manager_main"
-server-module = "federated_task.server_main"
-model-file = "federated_task/model.py"
-data-preparation-file = "federated_task/data_preparation.py"
-training-file = "federated_task/training.py"
+client-module = "federated_task.federated_learning.client_main"
+client-manager-module = "federated_task.federated_learning.client_manager_main"
+server-module = "federated_task.federated_learning.server_main"
+model-file = "federated_task/local_training/model.py"
+data-preparation-file = "federated_task/local_training/data_preparation.py"
+training-file = "federated_task/local_training/training.py"
 config-file = "federated_task/conf/config.yaml"
-readiness-module = "federated_task.task_check"
+readiness-module = "federated_task.task_readiness.check"
 model-release-manifest = "model_release/manifest.json"
-tool-manifest = "federated_task/manifest.json"
+tool-module = "federated_task.tool_ai.tool"
+tool-manifest = "federated_task/tool_ai/manifest.json"

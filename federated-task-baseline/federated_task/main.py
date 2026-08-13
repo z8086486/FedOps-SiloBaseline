@@ -13,10 +13,10 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-from .tool import build_tool_smoke_payload, predict
 from .config import load_config
-from .training import export_initial_model
-from .task_check import check_readiness
+from .runtime.model_release import export_initial_model
+from .task_readiness.check import check_readiness
+from .tool_ai.tool import build_tool_smoke_payload, predict
 
 
 def _terminate_process(process: subprocess.Popen, name: str, timeout_seconds: float = 10.0) -> None:
@@ -88,14 +88,14 @@ def _run_participation(run_config: Mapping[str, Any]) -> None:
         key: str(value) for key, value in optional_environment.items() if value
     })
     manager = subprocess.Popen(
-        [sys.executable, "-m", "federated_task.client_manager_main"],
+        [sys.executable, "-m", "federated_task.federated_learning.client_manager_main"],
         env=process_env,
     )
     client = None
     try:
         _wait_for_manager(manager, manager_port, startup_timeout)
         client = subprocess.Popen(
-            [sys.executable, "-m", "federated_task.client_main"],
+            [sys.executable, "-m", "federated_task.federated_learning.client_main"],
             env=process_env,
         )
         while True:

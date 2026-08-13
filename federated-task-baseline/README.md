@@ -11,11 +11,12 @@ For a new model and dataset, edit in this order:
 1. `federated_task/conf/config.yaml`: describe the Primary Model, data contract, verified
    local-training defaults, and supported federation strategies. Web Server Management
    supplies the actual rounds/clients/strategy for each Campaign.
-2. `federated_task/model.py`: define the model and its input/output behavior.
-3. `federated_task/data_preparation.py`: bind local data and create identical batch
+2. `federated_task/local_training/model.py`: define the one Task model shared by local
+   training, federated learning, and Tool AI.
+3. `federated_task/local_training/data_preparation.py`: bind local data and create identical batch
    structures for real data and non-sensitive readiness probes.
-4. `federated_task/training.py`: implement local training, loss, and evaluation metrics.
-5. `federated_task/manifest.json` and `federated_task/tool.py`: define and implement
+4. `federated_task/local_training/training.py`: implement local training, loss, and evaluation metrics.
+5. `federated_task/tool_ai/manifest.json` and `federated_task/tool_ai/tool.py`: define and implement
    Agent Builder Tool inference.
 6. `README.md`: replace this guide with the Registry Task Card while retaining the
    required Registry sections listed below.
@@ -25,12 +26,31 @@ Search the Python files for these markers:
 - `FEDOPS CONTRACT - DO NOT RENAME`: keep the function name, arguments, and return
   structure. Replace only its implementation body.
 - `USER IMPLEMENTATION`: model/data/training/Tool code that the Task author owns.
-- `FEDOPS RUNTIME - DO NOT EDIT`: Baseline integration code. Normal Task development
-  must not modify it.
+- Files under `federated_learning/`, `task_readiness/`, and `runtime/` are FedOps-managed
+  integration code. Normal Task development must not modify them.
 
 You may add helper classes, helper functions, and new source files. Do not rename or
 remove the fixed hooks because local training, Readiness, the FL client/server, and
 Agent Builder import them directly.
+
+## Directory ownership
+
+```text
+federated_task/
+├── conf/                 # EDIT: Task configuration values
+├── local_training/       # EDIT: model, local data, training, evaluation
+├── tool_ai/              # EDIT: Tool description and inference
+├── federated_learning/   # DO NOT EDIT: FedOps client/manager/server adapters
+├── task_readiness/       # DO NOT EDIT: Release/Participation checks
+├── runtime/              # DO NOT EDIT: Model Release and callback adapters
+├── config.py             # DO NOT EDIT: config and Campaign overlay loader
+└── main.py               # DO NOT EDIT: Task CLI
+```
+
+The model lives under `local_training/` because that is where the Owner implements it;
+it is not local-only. The same model definition is imported by local training, the
+federated client/server, Readiness, and Tool AI. Do not create a second federated or
+Tool-specific model definition.
 
 ## What can be edited
 
@@ -38,15 +58,15 @@ Agent Builder import them directly.
 | --- | --- | --- |
 | `README.md` | Replace Task description and usage | Keep `Intended use`, `Local data setup`, `Federated participation`, `Limitations`, and `Privacy` headings |
 | `conf/config.yaml` | Replace Primary Model, dataset contract, and local-training defaults | Keep required keys; runtime Campaign and local paths are injected |
-| `model.py` | Add model class and implement three hooks | Hook names, arguments, and return contracts |
-| `data_preparation.py` | Implement feature description, local loaders, probes, and server validation loader | Six hook names, arguments, local-data boundary, and batch contract |
-| `training.py` | Implement `train_model` and `evaluate_model` | Function signatures and everything below `FEDOPS RUNTIME - DO NOT EDIT` |
-| `manifest.json` | Replace Tool name, description, JSON input, and JSON output schema | JSON format, `schemaVersion`, entrypoint, and model format |
-| `tool.py` | Implement Tool inference and one smoke input | Two hook names, arguments, and JSON-compatible returns |
+| `local_training/model.py` | Add model class and implement three hooks | Hook names, arguments, and return contracts |
+| `local_training/data_preparation.py` | Implement feature description, local loaders, probes, and server validation loader | Six hook names, arguments, local-data boundary, and batch contract |
+| `local_training/training.py` | Implement `train_model` and `evaluate_model` | Function names, signatures, and return contracts |
+| `tool_ai/manifest.json` | Replace Tool description, feature names, output description, and labels | `description`, `features`, and `output` JSON structure |
+| `tool_ai/tool.py` | Implement Tool inference and one smoke input | Two hook names, arguments, and JSON-compatible returns |
 | `pyproject.toml` | Add Task-specific packages to `dependencies` | Package name, scripts, and `[tool.fedops.task]` paths |
 | `uv.lock` | Regenerate through Agent Studio Environment Sync | Never edit manually |
 | `model_release/manifest.json` | No manual editing | Generated by `local-train` together with `model.safetensors` |
-| `client_main.py`, `client_manager_main.py`, `server_main.py`, `main.py`, `task_check.py`, `config.py` | No normal Task edits | FedOps runtime integration |
+| `federated_learning/`, `task_readiness/`, `runtime/`, `main.py`, `config.py` | No normal Task edits | FedOps runtime integration |
 
 ## Fixed Python contracts
 
@@ -86,7 +106,8 @@ One edit often affects several files:
   must not read or copy participant data.
 - `predict()` must apply the same preprocessing and load the same model architecture
   used by local and federated training.
-- `manifest.json` must describe the exact JSON consumed and returned by `predict()`.
+- Every name in `tool_ai/manifest.json` `features` must exist in the payload consumed by
+  `predict()`. `output.description` and `output.labels` describe its result to Agent Builder.
 - Model constructor settings in `conf/config.yaml` must match `build_model(config)`.
 - `model.display_name` is the Registry-facing Primary Model name. It is not a global
   identifier; `@owner/task-slug` identifies the Federated Task.
@@ -142,8 +163,8 @@ uploading raw data or parameter values.
 
 `local-train` writes `model_release/model.safetensors` and replaces the draft model
 manifest with checksum, size, parameter signature, provenance, and evaluation metrics.
-Update `federated_task/manifest.json` and `tool.py` together so Agent Builder receives
-the exact JSON input/output contract.
+Update `federated_task/tool_ai/manifest.json` and `tool.py` together so Agent Builder
+receives the same feature names and output meaning implemented by the Tool adapter.
 
 ## Limitations
 

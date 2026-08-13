@@ -8,10 +8,10 @@ from omegaconf import OmegaConf
 
 from fedops.server.app import FLServer
 
-from .data_preparation import gl_model_torch_validation
-from .config import load_config
-from .model import build_model
-from .training import MODEL_PATH, load_released_model, test_torch
+from ..config import load_config
+from ..local_training.data_preparation import gl_model_torch_validation
+from ..local_training.model import build_model
+from ..runtime.model_release import MODEL_PATH, load_released_model, test_torch
 
 
 def main() -> None:

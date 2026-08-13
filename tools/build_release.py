@@ -15,7 +15,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "federated-task-baseline"
-DEFAULT_OUTPUT = ROOT / "dist" / "federated-task-baseline-0.8.0"
+DEFAULT_OUTPUT = ROOT / "dist" / "federated-task-baseline-0.9.0"
 FORBIDDEN_PARTS = {".git", ".venv", "__pycache__", ".fedops-studio", "dataset", "datasets"}
 
 
@@ -33,20 +33,20 @@ def _metadata(relative: str) -> dict[str, Any]:
     if relative == "LICENSE":
         return {"role": "license", "editable": False, "content_type": "text/plain"}
     if relative == "pyproject.toml":
-        return {"role": "task_definition", "editable": False, "content_type": "application/toml"}
+        return {"role": "task_definition", "editable": True, "content_type": "application/toml"}
     if relative == "uv.lock":
         return {"role": "dependency_lock", "editable": False, "content_type": "application/toml"}
     if relative == "federated_task/conf/config.yaml":
         return {"role": "task_config", "editable": True, "content_type": "application/yaml"}
-    if relative == "federated_task/model.py":
+    if relative == "federated_task/local_training/model.py":
         return {"role": "model_code", "editable": True, "content_type": "text/x-python"}
-    if relative == "federated_task/data_preparation.py":
+    if relative == "federated_task/local_training/data_preparation.py":
         return {"role": "data_preparation", "editable": True, "content_type": "text/x-python"}
-    if relative == "federated_task/training.py":
+    if relative == "federated_task/local_training/training.py":
         return {"role": "local_training", "editable": True, "content_type": "text/x-python"}
-    if relative == "federated_task/manifest.json":
+    if relative == "federated_task/tool_ai/manifest.json":
         return {"role": "tool_manifest", "editable": True, "content_type": "application/json"}
-    if relative == "federated_task/tool.py":
+    if relative == "federated_task/tool_ai/tool.py":
         return {"role": "tool_inference", "editable": True, "content_type": "text/x-python"}
     if relative == "model_release/manifest.json":
         return {"role": "model_release_manifest", "editable": False, "content_type": "application/json"}
@@ -84,7 +84,7 @@ def build_manifest() -> dict[str, Any]:
         "schema_version": 2,
         "baseline": {
             "name": "federated-task-baseline",
-            "release_version": "0.8.0",
+            "release_version": "0.9.0",
             "template_revision": 1,
         },
         "compatibility": {
@@ -95,10 +95,10 @@ def build_manifest() -> dict[str, Any]:
         "entrypoints": {
             "task_cli": "fedops-task",
             "task_runtime": "federated_task.main:main",
-            "client": "federated_task.client_main:main",
-            "client_manager": "federated_task.client_manager_main:main",
-            "server": "federated_task.server_main:main",
-            "readiness": "federated_task.task_check:check_readiness",
+            "client": "federated_task.federated_learning.client_main:main",
+            "client_manager": "federated_task.federated_learning.client_manager_main:main",
+            "server": "federated_task.federated_learning.server_main:main",
+            "readiness": "federated_task.task_readiness.check:check_readiness",
         },
         "run_modes": [
             "local-train",
@@ -136,7 +136,7 @@ def export_release(output: Path = DEFAULT_OUTPUT) -> Path:
     ).strip()
     provenance = {
         "baseline": "federated-task-baseline",
-        "version": "0.8.0",
+        "version": "0.9.0",
         "revision": 1,
         "sourceCommit": source_commit,
         "manifestSha256": _sha256(manifest_path),

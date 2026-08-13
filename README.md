@@ -13,7 +13,7 @@ tests/                    Baseline maintainer tests; not published
 tools/                    release exporter; not published
 ```
 
-The 0.6 starter is a guided implementation-contract template rather than an MNIST example.
+The 0.9 starter is a functionally organized implementation-contract template rather than an MNIST example.
 It supports:
 
 - fixed, documented user hooks for model, data, training, readiness probes, and Tool AI
@@ -22,6 +22,11 @@ It supports:
 - Release Readiness for Owner publication
 - Participation Readiness for participant data and parameter-update preflight
 - Agent Builder Tool inference with an Initial or Global Model
+
+Owner-editable code is grouped under `local_training/`, `tool_ai/`, and `conf/`.
+FedOps-managed integration is grouped under `federated_learning/`, `task_readiness/`,
+and `runtime/`. The same model definition is shared across local training, federation,
+and Tool AI.
 
 Runnable domain examples are kept separately in
 `../FedOps-AgentStudio-TestRunCases/`; they are not shipped as the default Baseline.
@@ -38,7 +43,7 @@ federated-task-baseline/.venv/bin/python tools/build_release.py
 
 ## Release policy
 
-- Current development release: `federated-task-baseline@0.6.0`
+- Current development release: `federated-task-baseline@0.9.0`
 - Existing releases remain available through Git history and existing Web/S3 tasks.
 - A release is immutable. Changes require a new version.
 - Raw datasets, `.venv`, local artifacts, credentials, and readiness run details are

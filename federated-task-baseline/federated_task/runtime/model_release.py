@@ -1,11 +1,10 @@
-"""User-owned training hooks followed by fixed FedOps runtime adapters."""
+"""FEDOPS RUNTIME FILE - fixed Model Release and FedOps callback adapters."""
 
 from __future__ import annotations
 
 import hashlib
 import json
 import math
-from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
@@ -15,93 +14,17 @@ from torch import nn
 
 from fedops.client.parameter_contract import parameter_signature
 
-from .config import load_config
-from .data_preparation import build_smoke_loaders, load_partition
-from .model import build_model
+from ..config import load_config
+from ..local_training.data_preparation import build_smoke_loaders, load_partition
+from ..local_training.model import build_model
+from ..local_training.training import evaluate_model, train_model
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 MODEL_RELEASE_DIR = PROJECT_ROOT / "model_release"
 MODEL_PATH = MODEL_RELEASE_DIR / "model.safetensors"
 MODEL_MANIFEST_PATH = MODEL_RELEASE_DIR / "manifest.json"
 
-
-# USER IMPLEMENTATION ---------------------------------------------------------
-# Add Task-specific losses, metrics, and optimizer helpers in this section only.
-
-# FEDOPS CONTRACT - DO NOT RENAME OR CHANGE ARGUMENTS/RETURN TYPE.
-# EDIT HERE - update ``model`` in place and honor ``max_batches`` when provided.
-def train_model(
-    model: nn.Module,
-    loader: Iterable,
-    *,
-    epochs: int,
-    learning_rate: float,
-    device: torch.device,
-    max_batches: int | None = None,
-) -> float:
-    """Train ``model`` with local batches and return the mean training loss.
-
-    Args:
-        model: The local model to update in place.
-        loader: Batches shaped as ``(inputs, targets)``.
-        epochs: Number of local epochs.
-        learning_rate: Effective local learning rate.
-        device: Selected CPU, CUDA, or accelerator device.
-        max_batches: Optional readiness-only limit; honor it when provided.
-
-    Returns:
-        One finite ``float`` representing mean training loss. Move the model
-        back to CPU before returning so FedOps can serialize its parameters.
-
-    Example implementation outline::
-
-        model.to(device).train()
-        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-        for _ in range(epochs):
-            for inputs, targets in loader:
-                # move values to device, compute loss, backward, and optimizer.step()
-                # stop once max_batches is reached when it is not None
-                ...
-        model.to("cpu")
-        return float(mean_loss)
-    """
-    del model, loader, epochs, learning_rate, device, max_batches
-    raise NotImplementedError(
-        "Implement federated_task.training.train_model() with the Task loss and optimizer"
-    )
-
-
-# FEDOPS CONTRACT - DO NOT RENAME OR CHANGE ARGUMENTS/RETURN TYPE.
-# EDIT HERE - use the Task's loss and documented primary/additional metrics.
-def evaluate_model(
-    model: nn.Module,
-    loader: Iterable,
-    *,
-    device: torch.device,
-    max_batches: int | None = None,
-) -> tuple[float, float, dict[str, float]]:
-    """Evaluate a model and return the fixed FedOps evaluation tuple.
-
-    Returns:
-        Exactly ``(loss, primary_metric, additional_metrics)`` where the first
-        two values are finite floats and ``additional_metrics`` is a mapping of
-        metric names to finite float values. The primary metric may be accuracy,
-        F1, MAE, RMSE, or another Task-appropriate measure documented in README.
-
-    Example return::
-
-        return float(mean_loss), float(accuracy), {"weighted_f1": float(f1)}
-    """
-    del model, loader, device, max_batches
-    raise NotImplementedError(
-        "Implement federated_task.training.evaluate_model() with Task metrics"
-    )
-
-
-# FEDOPS RUNTIME - DO NOT EDIT -------------------------------------------------
-# Everything below is shared Baseline integration code. It validates the user hooks,
-# exports/loads Model Releases, and adapts them to the FedOps 1.2 callback contract.
 
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
@@ -214,12 +137,12 @@ def export_initial_model(
         "framework": "pytorch",
         "format": "safetensors",
         "artifact": MODEL_PATH.name,
-        "architecture": "federated_task.model:build_model",
+        "architecture": "federated_task.local_training.model:build_model",
         "displayName": str(config["model"]["display_name"]),
         "size": MODEL_PATH.stat().st_size,
         "sha256": _sha256(MODEL_PATH),
         "parameterSignature": signature,
-        "inputContract": "federated_task/manifest.json",
+        "inputContract": "federated_task/tool_ai/manifest.json",
         "trainingData": "synthetic-smoke" if synthetic else "local-only",
         "metrics": {
             "trainingLoss": train_loss,
@@ -236,7 +159,7 @@ def export_initial_model(
 
 
 def train_torch():
-    """Return the callback shape required by the FedOps 1.2 client."""
+    """Return the callback shape required by the FedOps client."""
     def callback(model, train_loader, epochs, cfg, hp=None):
         learning_rate = (
             float(hp["learning_rate"])

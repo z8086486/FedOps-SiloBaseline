@@ -31,7 +31,7 @@ def describe_input_features() -> dict[str, Any]:
         }
     """
     raise NotImplementedError(
-        "Implement federated_task.data_preparation.describe_input_features()"
+        "Implement federated_task.local_training.data_preparation.describe_input_features()"
     )
 
 
@@ -53,7 +53,7 @@ def preprocess(sample: Mapping[str, Any]) -> Any:
     """
     del sample
     raise NotImplementedError(
-        "Implement federated_task.data_preparation.preprocess()"
+        "Implement federated_task.local_training.data_preparation.preprocess()"
     )
 
 
@@ -97,7 +97,7 @@ def load_partition(
     """
     del dataset, validation_split, batch_size, data_root, seed, download
     raise NotImplementedError(
-        "Implement federated_task.data_preparation.load_partition() with local-only data"
+        "Implement federated_task.local_training.data_preparation.load_partition() with local-only data"
     )
 
 
@@ -124,7 +124,7 @@ def build_smoke_loaders(
     """
     del sample_count, batch_size, seed
     raise NotImplementedError(
-        "Implement federated_task.data_preparation.build_smoke_loaders()"
+        "Implement federated_task.local_training.data_preparation.build_smoke_loaders()"
     )
 
 
@@ -143,7 +143,7 @@ def build_contract_probe(batch_size: int = 2) -> Any:
     """
     del batch_size
     raise NotImplementedError(
-        "Implement federated_task.data_preparation.build_contract_probe()"
+        "Implement federated_task.local_training.data_preparation.build_contract_probe()"
     )
 
 
@@ -168,5 +168,5 @@ def gl_model_torch_validation(
     """
     del batch_size, data_root, download
     raise NotImplementedError(
-        "Implement federated_task.data_preparation.gl_model_torch_validation()"
+        "Implement federated_task.local_training.data_preparation.gl_model_torch_validation()"
     )
