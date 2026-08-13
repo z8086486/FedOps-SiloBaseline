@@ -48,3 +48,5 @@ federated-task-baseline/.venv/bin/python tools/build_release.py
 - A release is immutable. Changes require a new version.
 - Raw datasets, `.venv`, local artifacts, credentials, and readiness run details are
   excluded from the distributed starter.
+- Python build output (`build/`, `dist/`) and hidden/cache files are never included in
+  a Baseline manifest, even when a maintainer builds a wheel before exporting it.

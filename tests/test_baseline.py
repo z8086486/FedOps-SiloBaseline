@@ -125,6 +125,8 @@ class BaselineContractTest(unittest.TestCase):
         self.assertIn("model_release/manifest.json", paths)
         self.assertIn("requirements.txt", paths)
         self.assertFalse(any(path.startswith("tests/") or path.startswith("tools/") for path in paths))
+        self.assertFalse(any("dist" in Path(path).parts for path in paths))
+        self.assertFalse(any(any(part.startswith(".") for part in Path(path).parts) for path in paths))
         self.assertTrue(by_path["federated_task/local_training/model.py"]["editable"])
         self.assertTrue(by_path["federated_task/tool_ai/manifest.json"]["editable"])
         self.assertTrue(by_path["requirements.txt"]["editable"])

@@ -16,7 +16,17 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "federated-task-baseline"
 DEFAULT_OUTPUT = ROOT / "dist" / "federated-task-baseline-0.10.0"
-FORBIDDEN_PARTS = {".git", ".venv", "__pycache__", ".fedops-studio", "dataset", "datasets"}
+FORBIDDEN_PARTS = {
+    ".git",
+    ".venv",
+    ".pytest_cache",
+    "__pycache__",
+    ".fedops-studio",
+    "build",
+    "dist",
+    "dataset",
+    "datasets",
+}
 
 
 def _sha256(path: Path) -> str:
@@ -63,6 +73,8 @@ def source_files() -> list[Path]:
             continue
         relative = path.relative_to(SOURCE)
         if any(part in FORBIDDEN_PARTS for part in relative.parts):
+            continue
+        if any(part.startswith(".") for part in relative.parts):
             continue
         if relative.as_posix() == "model_release/model.safetensors":
             continue
