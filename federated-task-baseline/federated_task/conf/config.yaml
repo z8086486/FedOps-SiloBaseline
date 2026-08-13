@@ -20,6 +20,9 @@ model:
   # output_size: 10
 
 # REQUIRED: local-only participant data contract. Never put a filesystem path here.
+# Agent Studio creates and injects this Task's private directory at runtime:
+#   .local-data/federated-tasks/<local-project>/dataset/
+# Use Workspace > Task Test > Open Data Folder to place local files there.
 dataset:
   # REQUIRED: logical dataset or input-contract name.
   # Example: MNIST

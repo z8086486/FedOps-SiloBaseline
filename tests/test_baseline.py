@@ -112,7 +112,7 @@ class BaselineContractTest(unittest.TestCase):
 
     def test_release_manifest_contains_only_workspace_files(self):
         manifest = build_manifest()
-        self.assertEqual(manifest["baseline"]["release_version"], "0.10.0")
+        self.assertEqual(manifest["baseline"]["release_version"], "0.11.0")
         self.assertEqual(manifest["compatibility"]["agent_studio_task_schema"], 3)
         self.assertEqual(manifest["compatibility"]["fedops_participation"], "==1.1.30.15")
         paths = {entry["path"] for entry in manifest["files"]}
@@ -155,6 +155,8 @@ class BaselineContractTest(unittest.TestCase):
         self.assertIn("## What can be edited", readme)
         self.assertIn("## Fixed Python contracts", readme)
         self.assertIn("requirements.txt", readme)
+        self.assertIn("Open Data Folder", readme)
+        self.assertIn(".local-data", readme)
         for relative in (
             "federated_task/local_training/model.py",
             "federated_task/local_training/data_preparation.py",

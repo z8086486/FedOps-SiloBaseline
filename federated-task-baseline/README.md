@@ -8,18 +8,21 @@ participants call the fixed names and arguments exactly as shown below.
 
 For a new model and dataset, edit in this order:
 
-1. `federated_task/conf/config.yaml`: complete the clearly marked model, data-contract,
+1. In Agent Studio `Workspace > Task Test`, select `Open Data Folder` and place the
+   private dataset in the automatically prepared Task directory. This directory is
+   outside the releaseable source tree.
+2. `federated_task/conf/config.yaml`: complete the clearly marked model, data-contract,
    and local-training values. FedOps supplies fixed runtime defaults, while Web Server
    Management supplies the actual rounds/clients/strategy for each Campaign.
-2. `requirements.txt`: list each Python library as `library==version`.
-3. `federated_task/local_training/model.py`: define the one Task model shared by local
+3. `requirements.txt`: list each Python library as `library==version`.
+4. `federated_task/local_training/model.py`: define the one Task model shared by local
    training, federated learning, and Tool AI.
-4. `federated_task/local_training/data_preparation.py`: bind local data and create identical batch
+5. `federated_task/local_training/data_preparation.py`: bind local data and create identical batch
    structures for real data and non-sensitive readiness probes.
-5. `federated_task/local_training/training.py`: implement local training, loss, and evaluation metrics.
-6. `federated_task/tool_ai/manifest.json` and `federated_task/tool_ai/tool.py`: define and implement
+6. `federated_task/local_training/training.py`: implement local training, loss, and evaluation metrics.
+7. `federated_task/tool_ai/manifest.json` and `federated_task/tool_ai/tool.py`: define and implement
    Agent Builder Tool inference.
-7. `README.md`: replace this guide with the Registry Task Card while retaining the
+8. `README.md`: replace this guide with the Registry Task Card while retaining the
    required Registry sections listed below.
 
 Search the Python files for these markers:
@@ -126,6 +129,25 @@ primary evaluation metric.
 TODO: Document expected local files, columns/features, labels, shapes, dtypes,
 preprocessing, and train/validation/test split. Raw data must remain on the Agent
 Studio device and is supplied through `--data-root` or `FEDOPS_LOCAL_DATA_DIR`.
+
+Agent Studio prepares the physical directory automatically when this Task is opened:
+
+```text
+<fedops-workspace>/accounts/<account-key>/.local-data/
+└── federated-tasks/<local-project>/dataset/   # Open Data Folder
+```
+
+Do not create a `dataset/` or `datasets/` directory inside this Baseline. Local Train
+and Participation Readiness receive the prepared directory as `data_root`, and
+`local_training/data_preparation.py` must read only from that argument. In this Task
+Card, replace the example below with the layout users must place inside the opened
+folder:
+
+```text
+dataset/
+├── train.csv       # example only
+└── test.csv        # example only
+```
 
 Do not include raw data, credentials, or a user-specific absolute path in a Registry
 Release.

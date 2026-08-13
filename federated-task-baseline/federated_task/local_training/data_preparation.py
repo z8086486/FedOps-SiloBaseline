@@ -74,7 +74,9 @@ def load_partition(
         dataset: Logical dataset name from ``conf/config.yaml``.
         validation_split: Fraction reserved for local validation.
         batch_size: Batch size for all returned loaders.
-        data_root: Agent Studio's local data binding. Never upload or report it.
+        data_root: Agent Studio's Task-specific ``.local-data`` directory.
+            Treat this argument as the only dataset root; do not replace it with
+            a user-specific absolute path or a path inside the releaseable source.
         seed: Deterministic split/shuffle seed.
         download: Whether this Task explicitly permits downloading public data.
 
@@ -84,6 +86,8 @@ def load_partition(
 
     Example implementation outline::
 
+        # The user placed files with Workspace > Task Test > Open Data Folder.
+        # For example: Path(data_root) / "train.csv"
         rows = read_local_rows(data_root)
         dataset_object = TaskDataset(rows, transform=preprocess)
         train_data, validation_data, test_data = deterministic_split(
