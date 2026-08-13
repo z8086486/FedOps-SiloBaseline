@@ -1,0 +1,43 @@
+# Federated Task configuration (Baseline 0.10).
+#
+# Only values marked REQUIRED must be completed before Local Training and
+# Release Readiness. FedOps-owned schema, runtime, federation, and monitoring
+# defaults are supplied by federated_task/config.py and are not repeated here.
+
+# OPTIONAL: reproducible model initialization and data splitting.
+# Example: 42
+random_seed: 42
+
+# REQUIRED: model identity and constructor values.
+model:
+  # REQUIRED: model name shown on the Registry card.
+  # Example: MNIST Classifier
+  display_name: replace-with-primary-model-name
+
+  # OPTIONAL: values consumed by local_training/model.py build_model(config).
+  # Add any Task-specific keys here. Example:
+  # input_channels: 1
+  # output_size: 10
+
+# REQUIRED: local-only participant data contract. Never put a filesystem path here.
+# Agent Studio creates and injects this Task's private directory at runtime:
+#   .local-data/federated-tasks/<local-project>/dataset/
+# Use Workspace > Task Test > Open Data Folder to place local files there.
+dataset:
+  # REQUIRED: logical dataset or input-contract name.
+  # Example: MNIST
+  name: replace-with-dataset-name
+
+  # REQUIRED: value greater than 0 and less than 1.
+  # Example: 0.2 means 80% training and 20% validation.
+  validation_split: 0.2
+
+  # REQUIRED: whether data_preparation.py may download data when explicitly run.
+  download: false
+
+# REQUIRED: defaults used by Local Training and each participant's local epoch.
+local_training:
+  # Examples: 0.001, 1, 32
+  learning_rate: 0.001
+  epochs: 1
+  batch_size: 32
