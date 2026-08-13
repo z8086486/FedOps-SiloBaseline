@@ -112,7 +112,7 @@ class BaselineContractTest(unittest.TestCase):
 
     def test_release_manifest_contains_only_workspace_files(self):
         manifest = build_manifest()
-        self.assertEqual(manifest["baseline"]["release_version"], "0.11.0")
+        self.assertEqual(manifest["baseline"]["release_version"], "0.12.0")
         self.assertEqual(manifest["compatibility"]["agent_studio_task_schema"], 3)
         self.assertEqual(manifest["compatibility"]["fedops_participation"], "==1.1.30.15")
         paths = {entry["path"] for entry in manifest["files"]}
@@ -123,6 +123,7 @@ class BaselineContractTest(unittest.TestCase):
         self.assertIn("federated_task/local_training/model.py", paths)
         self.assertIn("federated_task/tool_ai/manifest.json", paths)
         self.assertIn("model_release/manifest.json", paths)
+        self.assertIn("federated_task/runtime/progress.py", paths)
         self.assertIn("requirements.txt", paths)
         self.assertFalse(any(path.startswith("tests/") or path.startswith("tools/") for path in paths))
         self.assertFalse(any("dist" in Path(path).parts for path in paths))
@@ -134,6 +135,7 @@ class BaselineContractTest(unittest.TestCase):
         self.assertFalse(by_path["uv.lock"]["editable"])
         self.assertFalse(by_path["federated_task/federated_learning/client_main.py"]["editable"])
         self.assertFalse(by_path["federated_task/runtime/model_release.py"]["editable"])
+        self.assertFalse(by_path["federated_task/runtime/progress.py"]["editable"])
         for entry in manifest["files"]:
             self.assertTrue((BASELINE / entry["path"]).is_file())
 

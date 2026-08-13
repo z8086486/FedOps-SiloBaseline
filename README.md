@@ -18,6 +18,7 @@ It supports:
 
 - fixed, documented user hooks for model, data, training, readiness probes, and Tool AI
 - local model training and Initial Model export after those hooks are implemented
+- live Local Train percentage, epoch/batch position, loss, and evaluation metrics in Agent Studio
 - FedOps federated participation using the same training implementation
 - Release Readiness for Owner publication
 - Participation Readiness for participant data and parameter-update preflight
@@ -43,7 +44,7 @@ federated-task-baseline/.venv/bin/python tools/build_release.py
 
 ## Release policy
 
-- Current development release: `federated-task-baseline@0.11.0`
+- Current development release: `federated-task-baseline@0.12.0`
 - Existing releases remain available through Git history and existing Web/S3 tasks.
 - A release is immutable. Changes require a new version.
 - Raw datasets, `.venv`, local artifacts, credentials, and readiness run details are

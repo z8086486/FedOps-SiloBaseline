@@ -20,6 +20,9 @@ For a new model and dataset, edit in this order:
 5. `federated_task/local_training/data_preparation.py`: bind local data and create identical batch
    structures for real data and non-sensitive readiness probes.
 6. `federated_task/local_training/training.py`: implement local training, loss, and evaluation metrics.
+   The FedOps runtime always reports batch progress. Call the documented
+   `emit_training_metrics(...)` and `emit_evaluation_metrics(...)` helpers inside
+   your loops to add live loss and accuracy graphs without changing hook signatures.
 7. `federated_task/tool_ai/manifest.json` and `federated_task/tool_ai/tool.py`: define and implement
    Agent Builder Tool inference.
 8. `README.md`: replace this guide with the Registry Task Card while retaining the
@@ -188,6 +191,9 @@ uploading raw data or parameter values.
 
 `local-train` writes `model_release/model.safetensors` and replaces the draft model
 manifest with checksum, size, parameter signature, provenance, and evaluation metrics.
+Agent Studio shows fixed-stage progress automatically. Task training code may emit
+live named metrics through `runtime.progress`; these machine-readable events are kept
+out of the normal log and rendered as metric cards and charts.
 Update `federated_task/tool_ai/manifest.json` and `tool.py` together so Agent Builder
 receives the same feature names and output meaning implemented by the Tool adapter.
 

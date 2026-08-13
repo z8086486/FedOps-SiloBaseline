@@ -18,6 +18,7 @@ from ..config import load_config
 from ..local_training.data_preparation import build_smoke_loaders, load_partition
 from ..local_training.model import build_model
 from ..local_training.training import evaluate_model, train_model
+from .progress import ProgressLoader, emit_progress
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -79,9 +80,11 @@ def export_initial_model(
     max_batches: int | None = None,
 ) -> dict[str, Any]:
     """Train and export the owner Initial Model and immutable identity metadata."""
+    emit_progress("preparing", 0.0, "Preparing local training")
     config = load_config()
     seed = int(config["random_seed"])
     torch.manual_seed(seed)
+    emit_progress("loading-data", 0.0, "Loading local dataset")
     if synthetic:
         train_loader, validation_loader = build_smoke_loaders(
             sample_count=32,
@@ -98,28 +101,61 @@ def export_initial_model(
             seed=seed,
             download=download,
         )
+    emit_progress("loading-data", 1.0, "Local dataset is ready")
     model = build_model(config["model"])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    epochs = int(config["num_epochs"])
+    tracked_train_loader = ProgressLoader(
+        train_loader,
+        stage="training",
+        iterations=epochs,
+        max_batches=max_batches,
+    )
     train_loss = _finite_float(
         train_model(
             model,
-            train_loader,
-            epochs=int(config["num_epochs"]),
+            tracked_train_loader,
+            epochs=epochs,
             learning_rate=float(config["learning_rate"]),
             device=device,
             max_batches=max_batches,
         ),
         "training loss",
     )
+    emit_progress(
+        "training",
+        1.0,
+        "Local training completed",
+        metrics={"training_loss": train_loss},
+        epoch=epochs,
+        epochs=epochs,
+    )
+    tracked_validation_loader = ProgressLoader(
+        validation_loader,
+        stage="evaluating",
+        max_batches=max_batches,
+    )
     validation_loss, primary_metric, additional_metrics = normalize_evaluation(
         evaluate_model(
             model,
-            validation_loader,
+            tracked_validation_loader,
             device=device,
             max_batches=max_batches,
         )
     )
 
+    final_metrics = {
+        "training_loss": train_loss,
+        "validation_loss": validation_loss,
+        "primary_metric": primary_metric,
+        **additional_metrics,
+    }
+    emit_progress(
+        "exporting",
+        0.0,
+        "Exporting Model Release",
+        metrics=final_metrics,
+    )
     MODEL_RELEASE_DIR.mkdir(parents=True, exist_ok=True)
     state = {
         name: tensor.detach().cpu().contiguous()
@@ -154,6 +190,12 @@ def export_initial_model(
     MODEL_MANIFEST_PATH.write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
+    )
+    emit_progress(
+        "completed",
+        1.0,
+        "Local model and manifest are ready",
+        metrics=final_metrics,
     )
     return manifest
 

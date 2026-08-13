@@ -7,6 +7,8 @@ from collections.abc import Iterable
 import torch
 from torch import nn
 
+from ..runtime.progress import emit_evaluation_metrics, emit_training_metrics
+
 
 # Add Task-specific losses, metrics, and optimizer helpers in this file.
 
@@ -39,10 +41,19 @@ def train_model(
 
         model.to(device).train()
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-        for _ in range(epochs):
-            for inputs, targets in loader:
+        for epoch_index in range(epochs):
+            for batch_index, (inputs, targets) in enumerate(loader, start=1):
                 # move values to device, compute loss, backward, and optimizer.step()
                 # stop once max_batches is reached when it is not None
+                # Optionally publish live metrics without changing this hook:
+                # emit_training_metrics(
+                #     completed_batches=completed,
+                #     total_batches=expected_batches,
+                #     metrics={"training_loss": float(mean_loss)},
+                #     epoch=epoch_index + 1,
+                #     epochs=epochs,
+                #     batch=batch_index,
+                # )
                 ...
         model.to("cpu")
         return float(mean_loss)
@@ -73,6 +84,9 @@ def evaluate_model(
     Example return::
 
         return float(mean_loss), float(accuracy), {"weighted_f1": float(f1)}
+
+    During the evaluation loop, ``emit_evaluation_metrics(...)`` may be used
+    to show live validation loss and primary-metric graphs in Agent Studio.
     """
     del model, loader, device, max_batches
     raise NotImplementedError(
