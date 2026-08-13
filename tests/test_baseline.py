@@ -112,7 +112,7 @@ class BaselineContractTest(unittest.TestCase):
 
     def test_release_manifest_contains_only_workspace_files(self):
         manifest = build_manifest()
-        self.assertEqual(manifest["baseline"]["release_version"], "0.13.0")
+        self.assertEqual(manifest["baseline"]["release_version"], "0.14.0")
         self.assertEqual(manifest["compatibility"]["agent_studio_task_schema"], 3)
         self.assertEqual(manifest["compatibility"]["fedops_participation"], "==1.1.30.15")
         paths = {entry["path"] for entry in manifest["files"]}
@@ -139,17 +139,26 @@ class BaselineContractTest(unittest.TestCase):
         for entry in manifest["files"]:
             self.assertTrue((BASELINE / entry["path"]).is_file())
 
-    def test_v13_runtime_uses_cpu_torch_index_without_owner_configuration(self):
+    def test_v14_runtime_uses_matching_cpu_torch_packages_without_owner_configuration(self):
         pyproject = (BASELINE / "pyproject.toml").read_text(encoding="utf-8")
+        requirements = (BASELINE / "requirements.txt").read_text(encoding="utf-8")
         lockfile = (BASELINE / "uv.lock").read_text(encoding="utf-8")
         self.assertIn('name = "pytorch-cpu"', pyproject)
         self.assertIn('url = "https://download.pytorch.org/whl/cpu"', pyproject)
         self.assertIn('torch = [', pyproject)
         self.assertIn('torchvision = [', pyproject)
+        self.assertIn("torch==2.8.0", requirements)
+        self.assertIn("torchvision==0.23.0", requirements)
         self.assertIn("sys_platform == 'linux' or sys_platform == 'win32'", pyproject)
         self.assertIn('version = "2.8.0+cpu"', lockfile)
+        self.assertIn('version = "0.23.0+cpu"', lockfile)
         self.assertIn('registry = "https://download.pytorch.org/whl/cpu"', lockfile)
         self.assertNotIn('name = "nvidia-', lockfile)
+
+    def test_v14_runtime_remains_compatible_with_python_310(self):
+        progress = (BASELINE / "federated_task/runtime/progress.py").read_text(encoding="utf-8")
+        self.assertNotIn("from datetime import UTC", progress)
+        self.assertIn("datetime.now(timezone.utc)", progress)
 
     def test_tool_manifest_is_valid_json_template(self):
         manifest = json.loads(

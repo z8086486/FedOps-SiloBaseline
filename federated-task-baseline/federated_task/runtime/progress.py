@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import math
 from collections.abc import Iterable, Iterator, Mapping
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
 
 
@@ -47,7 +47,7 @@ def emit_progress(
         "stage": stage,
         "percent": start + ((end - start) * bounded_fraction),
         "message": str(message),
-        "timestamp": datetime.now(UTC).isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "metrics": normalized_metrics,
     }
     optional = {
@@ -145,4 +145,3 @@ class ProgressLoader(Iterable):
                 total_batches=batch_count or None,
             )
             yield value
-
