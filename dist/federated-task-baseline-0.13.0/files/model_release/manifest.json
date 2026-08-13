@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "status": "draft",
+  "role": "registry-bootstrap-model",
+  "origin": null,
+  "framework": "pytorch",
+  "format": "safetensors",
+  "artifact": "model.safetensors",
+  "architecture": "federated_task.local_training.model:build_model",
+  "size": null,
+  "sha256": null,
+  "parameterSignature": null,
+  "inputContract": "federated_task/tool_ai/manifest.json"
+}
