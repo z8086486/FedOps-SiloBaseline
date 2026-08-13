@@ -43,5 +43,6 @@ server:
     min_evaluate_clients: ${clients_per_round}
 
 runtime:
-  # Local communication-manager container port. Agent Studio maps the host side.
+  # FIXED DEFAULTS: Agent Studio assigns free local ports when participation starts.
   manager_port: 8004
+  client_port: 8003

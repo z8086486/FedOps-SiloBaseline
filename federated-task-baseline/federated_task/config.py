@@ -62,5 +62,9 @@ def validate_config(config: dict[str, Any]) -> None:
     if not isinstance(wandb, dict) or not isinstance(wandb.get("use"), bool):
         raise ValueError("config.yaml: wandb.use must be boolean")
     runtime = config.get("runtime")
-    if not isinstance(runtime, dict) or not isinstance(runtime.get("manager_port"), int):
-        raise ValueError("config.yaml: runtime.manager_port must be an integer")
+    if not isinstance(runtime, dict):
+        raise ValueError("config.yaml: runtime must be an object")
+    for port_name in ("manager_port", "client_port"):
+        port = runtime.get(port_name)
+        if not isinstance(port, int) or not 0 < port < 65536:
+            raise ValueError(f"config.yaml: runtime.{port_name} must be a valid port")

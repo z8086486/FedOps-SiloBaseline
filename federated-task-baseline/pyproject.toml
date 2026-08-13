@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fedops-federated-task"
-version = "0.6.0"
+version = "0.7.0"
 description = "Guided implementation-contract template for a FedOps Federated Task"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
@@ -21,7 +21,7 @@ dependencies = [
 
 [project.optional-dependencies]
 participate = [
-    "fedops==1.1.30.14",
+    "fedops==1.1.30.15",
     "fastapi==0.116.1",
     "requests==2.32.4",
     "uvicorn==0.35.0",
@@ -43,8 +43,11 @@ include = [
     "federated_task/conf/config.yaml",
 ]
 
+[tool.uv.sources]
+fedops = { git = "https://github.com/gachon-CCLab/FedOps.git", rev = "fde3137f6e94bc4558352b109a8c87186d20208c", subdirectory = "src/python" }
+
 [tool.fedops.task]
-schema-version = 2
+schema-version = 3
 task-type = "silo"
 runtime-module = "federated_task.main"
 client-module = "federated_task.client_main"

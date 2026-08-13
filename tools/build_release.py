@@ -7,13 +7,15 @@ import hashlib
 import json
 import mimetypes
 import shutil
+import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "federated-task-baseline"
-DEFAULT_OUTPUT = ROOT / "dist" / "federated-task-baseline-0.6.0"
+DEFAULT_OUTPUT = ROOT / "dist" / "federated-task-baseline-0.7.0"
 FORBIDDEN_PARTS = {".git", ".venv", "__pycache__", ".fedops-studio", "dataset", "datasets"}
 
 
@@ -82,13 +84,13 @@ def build_manifest() -> dict[str, Any]:
         "schema_version": 2,
         "baseline": {
             "name": "federated-task-baseline",
-            "release_version": "0.6.0",
+            "release_version": "0.7.0",
             "template_revision": 1,
         },
         "compatibility": {
             "python": ">=3.10,<3.13",
-            "fedops_participation": "==1.1.30.14",
-            "agent_studio_task_schema": 2,
+            "fedops_participation": "==1.1.30.15",
+            "agent_studio_task_schema": 3,
         },
         "entrypoints": {
             "task_cli": "fedops-task",
@@ -124,8 +126,25 @@ def export_release(output: Path = DEFAULT_OUTPUT) -> Path:
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, destination)
     output.mkdir(parents=True, exist_ok=True)
-    (output / "baseline-manifest.json").write_text(
+    manifest_path = output / "baseline-manifest.json"
+    manifest_path.write_text(
         json.dumps(build_manifest(), ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    source_commit = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+    ).strip()
+    provenance = {
+        "baseline": "federated-task-baseline",
+        "version": "0.7.0",
+        "revision": 1,
+        "sourceCommit": source_commit,
+        "manifestSha256": _sha256(manifest_path),
+        "vendoredAt": datetime.now(timezone.utc).isoformat(),
+        "runtimeFetch": False,
+    }
+    (output / "provenance.json").write_text(
+        json.dumps(provenance, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     return output
