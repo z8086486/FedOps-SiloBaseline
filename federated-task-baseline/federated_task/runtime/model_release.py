@@ -221,11 +221,18 @@ def train_torch():
     return callback
 
 
-def test_torch():
+def test_torch(max_batches: int | None = None):
     """Return the callback shape required by the FedOps client and server."""
     def callback(model, test_loader, cfg):
         del cfg
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        return normalize_evaluation(evaluate_model(model, test_loader, device=device))
+        return normalize_evaluation(
+            evaluate_model(
+                model,
+                test_loader,
+                device=device,
+                max_batches=max_batches,
+            )
+        )
 
     return callback

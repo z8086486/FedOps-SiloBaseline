@@ -41,3 +41,10 @@ local_training:
   learning_rate: 0.001
   epochs: 1
   batch_size: 32
+
+# OPTIONAL ADVANCED: cap aggregation-server Global Model evaluation for a
+# responsive server start and shorter rounds. The default is 8 batches.
+# Use `max_batches: null` only when every server evaluation must scan the
+# complete owner-controlled validation loader.
+# server_evaluation:
+#   max_batches: 8

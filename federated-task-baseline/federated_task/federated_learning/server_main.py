@@ -23,13 +23,18 @@ def main() -> None:
         data_root=data_root,
         download=bool(config.dataset.download),
     )
+    evaluation_max_batches = config.server_evaluation.max_batches
     FLServer(
         cfg=config,
         model=model,
         model_name=type(model).__name__,
         model_type=str(config.model_type),
         gl_val_loader=validation_loader,
-        test_torch=test_torch(),
+        test_torch=test_torch(
+            int(evaluation_max_batches)
+            if evaluation_max_batches is not None
+            else None
+        ),
     ).start()
 
 

@@ -14,6 +14,7 @@ sys.path.insert(0, str(BASELINE))
 
 from federated_task.config import load_config, resolve_runtime_config, validate_config
 from federated_task.federated_learning.client_main import main as client_main
+from federated_task.federated_learning.client_manager_main import info as manager_info
 from federated_task.federated_learning.server_main import main as server_main
 from federated_task.local_training.data_preparation import (
     build_contract_probe,
@@ -23,7 +24,7 @@ from federated_task.local_training.data_preparation import (
 )
 from federated_task.local_training.model import build_model, run_model, validate_model_output
 from federated_task.local_training.training import evaluate_model, train_model
-from federated_task.runtime.model_release import normalize_evaluation
+from federated_task.runtime.model_release import normalize_evaluation, test_torch
 from federated_task.tool_ai.tool import build_tool_smoke_payload, predict
 from tools.build_release import build_manifest
 
@@ -33,9 +34,14 @@ class BaselineContractTest(unittest.TestCase):
         config = load_config()
         self.assertEqual(config["model_type"], "Pytorch")
         self.assertEqual(config["dataset"]["name"], "replace-with-dataset-name")
+        self.assertEqual(config["server_evaluation"]["max_batches"], 8)
         self.assertNotIn("output_size", config["model"])
         config["local_training"]["batch_size"] = 0
         with self.assertRaisesRegex(ValueError, "batch_size"):
+            validate_config(config)
+        config = load_config()
+        config["server_evaluation"]["max_batches"] = 0
+        with self.assertRaisesRegex(ValueError, "server_evaluation.max_batches"):
             validate_config(config)
 
     def test_campaign_overlay_is_validated_and_normalized(self):
@@ -112,7 +118,7 @@ class BaselineContractTest(unittest.TestCase):
 
     def test_release_manifest_contains_only_workspace_files(self):
         manifest = build_manifest()
-        self.assertEqual(manifest["baseline"]["release_version"], "0.14.0")
+        self.assertEqual(manifest["baseline"]["release_version"], "0.15.0")
         self.assertEqual(manifest["compatibility"]["agent_studio_task_schema"], 3)
         self.assertEqual(manifest["compatibility"]["fedops_participation"], "==1.1.30.15")
         paths = {entry["path"] for entry in manifest["files"]}
@@ -139,7 +145,7 @@ class BaselineContractTest(unittest.TestCase):
         for entry in manifest["files"]:
             self.assertTrue((BASELINE / entry["path"]).is_file())
 
-    def test_v14_runtime_uses_matching_cpu_torch_packages_without_owner_configuration(self):
+    def test_v15_runtime_uses_matching_cpu_torch_packages_without_owner_configuration(self):
         pyproject = (BASELINE / "pyproject.toml").read_text(encoding="utf-8")
         requirements = (BASELINE / "requirements.txt").read_text(encoding="utf-8")
         lockfile = (BASELINE / "uv.lock").read_text(encoding="utf-8")
@@ -155,10 +161,22 @@ class BaselineContractTest(unittest.TestCase):
         self.assertIn('registry = "https://download.pytorch.org/whl/cpu"', lockfile)
         self.assertNotIn('name = "nvidia-', lockfile)
 
-    def test_v14_runtime_remains_compatible_with_python_310(self):
+    def test_v15_runtime_remains_compatible_with_python_310(self):
         progress = (BASELINE / "federated_task/runtime/progress.py").read_text(encoding="utf-8")
         self.assertNotIn("from datetime import UTC", progress)
         self.assertIn("datetime.now(timezone.utc)", progress)
+
+    def test_v15_server_evaluation_is_bounded_without_limiting_client_evaluation(self):
+        self.assertEqual(list(inspect.signature(test_torch).parameters), ["max_batches"])
+        server_main_source = (
+            BASELINE / "federated_task/federated_learning/server_main.py"
+        ).read_text(encoding="utf-8")
+        client_main_source = (
+            BASELINE / "federated_task/federated_learning/client_main.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("config.server_evaluation.max_batches", server_main_source)
+        self.assertIn("test_torch(", server_main_source)
+        self.assertIn("test_torch()", client_main_source)
 
     def test_tool_manifest_is_valid_json_template(self):
         manifest = json.loads(
@@ -171,6 +189,10 @@ class BaselineContractTest(unittest.TestCase):
     def test_fedops_client_and_server_entrypoints_are_present(self):
         self.assertTrue(callable(client_main))
         self.assertTrue(callable(server_main))
+
+    def test_v15_manager_exposes_legacy_global_model_transport_alias(self):
+        payload = manager_info()
+        self.assertEqual(payload["GL_Model_V"], payload["global_model_version"])
 
     def test_authoring_boundaries_are_visible_in_workspace_files(self):
         readme = (BASELINE / "README.md").read_text(encoding="utf-8")

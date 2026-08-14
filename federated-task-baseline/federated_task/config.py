@@ -27,6 +27,10 @@ RUNTIME_DEFAULTS: dict[str, Any] = {
             "strategy": "FedAvg",
         },
     },
+    # Keep aggregation-server startup responsive while retaining a meaningful
+    # owner-controlled Global Model quality sample. Set to null in config.yaml
+    # when a Task explicitly requires evaluation over the complete loader.
+    "server_evaluation": {"max_batches": 8},
     "monitoring": {"wandb": False},
 }
 
@@ -84,6 +88,19 @@ def validate_config(config: dict[str, Any]) -> None:
         value = local_training.get(key)
         if not isinstance(value, int) or value < 1:
             raise ValueError(f"config.yaml: local_training.{key} must be at least 1")
+
+    server_evaluation = config.get("server_evaluation")
+    if not isinstance(server_evaluation, dict):
+        raise ValueError("config.yaml: server_evaluation must be an object")
+    max_batches = server_evaluation.get("max_batches")
+    if max_batches is not None and (
+        isinstance(max_batches, bool)
+        or not isinstance(max_batches, int)
+        or max_batches < 1
+    ):
+        raise ValueError(
+            "config.yaml: server_evaluation.max_batches must be at least 1 or null"
+        )
 
     federation = config.get("federation")
     if not isinstance(federation, dict):

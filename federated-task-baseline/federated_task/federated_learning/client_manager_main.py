@@ -168,7 +168,12 @@ def healthz():
 
 @app.get("/info")
 def info():
-    return STATE
+    payload = STATE.model_dump()
+    # FedOps 1.1.30.15 ClientMangerAPI still reads the historical field name.
+    # Keep the v1.3 normalized field and expose this transport compatibility
+    # alias at the boundary instead of leaking it into Task author code.
+    payload["GL_Model_V"] = STATE.global_model_version
+    return payload
 
 
 @app.get("/trainFin")
