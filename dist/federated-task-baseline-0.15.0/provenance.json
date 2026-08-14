@@ -1,0 +1,9 @@
+{
+  "baseline": "federated-task-baseline",
+  "version": "0.15.0",
+  "revision": 1,
+  "sourceCommit": "48435fbf31c032eafc0b900e113a45c87493bc5e",
+  "manifestSha256": "6f051ac389bab5e57bac74ad950d86cd67e7d2ca1d59e1ee016197735798a37f",
+  "vendoredAt": "2026-08-14T00:31:36.595720+00:00",
+  "runtimeFetch": false
+}
