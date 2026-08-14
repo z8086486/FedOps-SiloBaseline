@@ -1,0 +1,10 @@
+{
+  "description": "Initial 또는 Global Model을 Tool AI로 사용할 때의 동작을 설명하세요.",
+  "features": [
+    "replace_with_feature_name"
+  ],
+  "output": {
+    "description": "모델이 반환하는 값의 의미를 설명하세요.",
+    "labels": []
+  }
+}
