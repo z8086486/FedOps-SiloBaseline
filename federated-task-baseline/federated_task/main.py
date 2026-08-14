@@ -59,10 +59,6 @@ def _run_participation(run_config: Mapping[str, Any]) -> None:
     runtime_key = _required(run_config.get("runtime_key"), "runtime_key")
     data_root = _required(run_config.get("data_root"), "data_root")
     manager_url = _required(run_config.get("server_manager_url"), "server_manager_url")
-    aggregation_server = _required(
-        run_config.get("aggregation_server") or run_config.get("federated_server_host"),
-        "aggregation_server",
-    )
     manager_port = int(run_config.get("manager_port") or config["runtime"]["manager_port"])
     client_port = int(run_config.get("client_port") or config["runtime"]["client_port"])
     startup_timeout = int(run_config.get("manager_startup_timeout") or 30)
@@ -76,8 +72,6 @@ def _run_participation(run_config: Mapping[str, Any]) -> None:
         "FEDOPS_CLIENT_API_URL": f"http://127.0.0.1:{client_port}",
         "FEDOPS_CLIENT_MANAGER_URL": f"http://127.0.0.1:{manager_port}",
         "FEDOPS_SERVER_MANAGER_URL": manager_url.rstrip("/"),
-        "FEDOPS_SERVER_HOST": aggregation_server,
-        "FEDOPS_AGGREGATION_SERVER": aggregation_server,
     })
     optional_environment = {
         "FEDOPS_RELEASE_ID": run_config.get("release_id"),
@@ -137,8 +131,6 @@ def build_parser() -> argparse.ArgumentParser:
     participate.add_argument("--runtime-key", required=True)
     participate.add_argument("--data-root", required=True)
     participate.add_argument("--server-manager-url", required=True)
-    participate.add_argument("--aggregation-server")
-    participate.add_argument("--federated-server-host", help=argparse.SUPPRESS)
     participate.add_argument("--manager-port", type=int)
     participate.add_argument("--client-port", type=int)
     participate.add_argument("--release-id")

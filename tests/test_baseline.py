@@ -118,7 +118,7 @@ class BaselineContractTest(unittest.TestCase):
 
     def test_release_manifest_contains_only_workspace_files(self):
         manifest = build_manifest()
-        self.assertEqual(manifest["baseline"]["release_version"], "0.15.0")
+        self.assertEqual(manifest["baseline"]["release_version"], "0.16.0")
         self.assertEqual(manifest["compatibility"]["agent_studio_task_schema"], 3)
         self.assertEqual(manifest["compatibility"]["fedops_participation"], "==1.1.30.15")
         paths = {entry["path"] for entry in manifest["files"]}
@@ -193,6 +193,13 @@ class BaselineContractTest(unittest.TestCase):
     def test_v15_manager_exposes_legacy_global_model_transport_alias(self):
         payload = manager_info()
         self.assertEqual(payload["GL_Model_V"], payload["global_model_version"])
+
+    def test_v16_participation_keeps_task_id_server_discovery(self):
+        source = (BASELINE / "federated_task/main.py").read_text(encoding="utf-8")
+        self.assertIn('"FEDOPS_SERVER_MANAGER_URL": manager_url.rstrip("/")', source)
+        self.assertNotIn("FEDOPS_AGGREGATION_SERVER", source)
+        self.assertNotIn("FEDOPS_SERVER_HOST", source)
+        self.assertNotIn('add_argument("--aggregation-server")', source)
 
     def test_authoring_boundaries_are_visible_in_workspace_files(self):
         readme = (BASELINE / "README.md").read_text(encoding="utf-8")

@@ -15,7 +15,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "federated-task-baseline"
-DEFAULT_OUTPUT = ROOT / "dist" / "federated-task-baseline-0.15.0"
+DEFAULT_OUTPUT = ROOT / "dist" / "federated-task-baseline-0.16.0"
 FORBIDDEN_PARTS = {
     ".git",
     ".venv",
@@ -100,7 +100,7 @@ def build_manifest() -> dict[str, Any]:
         "schema_version": 2,
         "baseline": {
             "name": "federated-task-baseline",
-            "release_version": "0.15.0",
+            "release_version": "0.16.0",
             "template_revision": 1,
         },
         "compatibility": {
@@ -152,7 +152,7 @@ def export_release(output: Path = DEFAULT_OUTPUT) -> Path:
     ).strip()
     provenance = {
         "baseline": "federated-task-baseline",
-        "version": "0.15.0",
+        "version": "0.16.0",
         "revision": 1,
         "sourceCommit": source_commit,
         "manifestSha256": _sha256(manifest_path),
