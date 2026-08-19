@@ -1,4 +1,9 @@
 {
+  "schemaVersion": 2,
+  "input": {
+    "modality": "replace_with_modality",
+    "sources": ["task-data", "manual"]
+  },
   "description": "Initial 또는 Global Model을 Tool AI로 사용할 때의 동작을 설명하세요.",
   "features": [
     "replace_with_feature_name"

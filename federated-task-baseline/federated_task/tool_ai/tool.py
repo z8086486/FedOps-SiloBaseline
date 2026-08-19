@@ -48,3 +48,18 @@ def build_tool_smoke_payload() -> dict[str, Any]:
     raise NotImplementedError(
         "Implement federated_task.tool_ai.tool.build_tool_smoke_payload()"
     )
+
+
+# FEDOPS OPTIONAL CONTRACT - keep this signature to use Task Data in Agent Builder.
+# EDIT HERE - read one record from data_root and return the exact predict() payload.
+def build_tool_data_sample(data_root: str | Path, index: int = 0) -> dict[str, Any]:
+    """Convert one local training-data record into a Tool AI inference payload.
+
+    Return ``{"payload": {...}, "metadata": {...}}``. The payload must match
+    ``manifest.json`` and :func:`predict`. Metadata may contain an index or
+    label for local inspection, but is never sent to FedOps Web.
+    """
+    del data_root, index
+    raise NotImplementedError(
+        "Implement build_tool_data_sample(data_root, index) to connect Task Data inference"
+    )

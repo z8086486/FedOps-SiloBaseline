@@ -118,7 +118,7 @@ class BaselineContractTest(unittest.TestCase):
 
     def test_release_manifest_contains_only_workspace_files(self):
         manifest = build_manifest()
-        self.assertEqual(manifest["baseline"]["release_version"], "0.16.0")
+        self.assertEqual(manifest["baseline"]["release_version"], "0.17.0")
         self.assertEqual(manifest["compatibility"]["agent_studio_task_schema"], 3)
         self.assertEqual(manifest["compatibility"]["fedops_participation"], "==1.1.30.15")
         paths = {entry["path"] for entry in manifest["files"]}
@@ -136,6 +136,10 @@ class BaselineContractTest(unittest.TestCase):
         self.assertFalse(any(any(part.startswith(".") for part in Path(path).parts) for path in paths))
         self.assertTrue(by_path["federated_task/local_training/model.py"]["editable"])
         self.assertTrue(by_path["federated_task/tool_ai/manifest.json"]["editable"])
+        tool_source = (
+            ROOT / "federated-task-baseline/federated_task/tool_ai/tool.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("def build_tool_data_sample(data_root: str | Path, index: int = 0)", tool_source)
         self.assertTrue(by_path["requirements.txt"]["editable"])
         self.assertFalse(by_path["pyproject.toml"]["editable"])
         self.assertFalse(by_path["uv.lock"]["editable"])

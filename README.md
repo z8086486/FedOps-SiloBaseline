@@ -23,6 +23,8 @@ It supports:
 - Release Readiness for Owner publication
 - Participation Readiness for participant data and parameter-update preflight
 - Agent Builder Tool inference with an Initial or Global Model
+- one optional `build_tool_data_sample(data_root, index)` adapter so Agent Builder
+  can use the same local-only Task Data folder for inference without uploading data
 
 Owner-editable code is grouped under `local_training/`, `tool_ai/`, and `conf/`.
 FedOps-managed integration is grouped under `federated_learning/`, `task_readiness/`,
@@ -44,7 +46,7 @@ federated-task-baseline/.venv/bin/python tools/build_release.py
 
 ## Release policy
 
-- Current development release: `federated-task-baseline@0.16.0`
+- Current development release: `federated-task-baseline@0.17.0`
 - Existing releases remain available through Git history and existing Web/S3 tasks.
 - A release is immutable. Changes require a new version.
 - Raw datasets, `.venv`, local artifacts, credentials, and readiness run details are
