@@ -1,0 +1,63 @@
+[build-system]
+requires = ["hatchling==1.27.0", "hatch-requirements-txt==0.4.1"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fedops-federated-task"
+version = "0.17.0"
+description = "Functionally organized implementation-contract template for a FedOps Federated Task"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = "Apache-2.0"
+dynamic = ["dependencies"]
+
+[tool.hatch.metadata.hooks.requirements_txt]
+files = ["requirements.txt"]
+
+[project.scripts]
+fedops-task = "federated_task.main:main"
+fedops-task-client = "federated_task.federated_learning.client_main:main"
+fedops-task-client-manager = "federated_task.federated_learning.client_manager_main:main"
+fedops-task-server = "federated_task.federated_learning.server_main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["federated_task"]
+
+[tool.hatch.build]
+include = [
+    "federated_task/**/*.py",
+    "federated_task/**/*.json",
+    "federated_task/conf/config.yaml",
+]
+
+[tool.uv.sources]
+fedops = { git = "https://github.com/gachon-CCLab/FedOps.git", rev = "fde3137f6e94bc4558352b109a8c87186d20208c", subdirectory = "src/python" }
+torch = [
+    { index = "pytorch-cpu", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+torchvision = [
+    { index = "pytorch-cpu", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+# FedOps 1.3 Federated Task runtimes use CPU Torch wheels on Linux/Windows.
+# macOS keeps the native PyPI wheel, which provides CPU and Apple MPS support.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.fedops.task]
+schema-version = 3
+task-type = "silo"
+runtime-module = "federated_task.main"
+client-module = "federated_task.federated_learning.client_main"
+client-manager-module = "federated_task.federated_learning.client_manager_main"
+server-module = "federated_task.federated_learning.server_main"
+model-file = "federated_task/local_training/model.py"
+data-preparation-file = "federated_task/local_training/data_preparation.py"
+training-file = "federated_task/local_training/training.py"
+config-file = "federated_task/conf/config.yaml"
+readiness-module = "federated_task.task_readiness.check"
+model-release-manifest = "model_release/manifest.json"
+tool-module = "federated_task.tool_ai.tool"
+tool-manifest = "federated_task/tool_ai/manifest.json"
