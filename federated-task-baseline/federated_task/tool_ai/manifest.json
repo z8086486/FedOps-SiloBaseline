@@ -2,7 +2,15 @@
   "schemaVersion": 2,
   "input": {
     "modality": "replace_with_modality",
-    "sources": ["task-data", "manual"]
+    "sources": ["task-data", "manual"],
+    "jsonSchema": {
+      "type": "object",
+      "required": ["replace_with_feature_name"],
+      "properties": {
+        "replace_with_feature_name": {"type": "number"}
+      },
+      "additionalProperties": false
+    }
   },
   "description": "Initial 또는 Global Model을 Tool AI로 사용할 때의 동작을 설명하세요.",
   "features": [
@@ -10,6 +18,14 @@
   ],
   "output": {
     "description": "모델이 반환하는 값의 의미를 설명하세요.",
-    "labels": []
+    "labels": [],
+    "jsonSchema": {
+      "type": "object",
+      "required": ["prediction"],
+      "properties": {
+        "prediction": {"type": "number"}
+      },
+      "additionalProperties": false
+    }
   }
 }

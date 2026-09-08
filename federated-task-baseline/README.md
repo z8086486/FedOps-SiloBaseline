@@ -67,9 +67,9 @@ Tool-specific model definition.
 | `conf/config.yaml` | Replace Primary Model, dataset contract, and local-training defaults | Keep required keys; runtime Campaign and local paths are injected |
 | `requirements.txt` | Add or change exact Task library versions using `library==version` | Keep one dependency contract for every Python Environment |
 | `local_training/model.py` | Add model class and implement three hooks | Hook names, arguments, and return contracts |
-| `local_training/data_preparation.py` | Implement feature description, local loaders, probes, and server validation loader | Six hook names, arguments, local-data boundary, and batch contract |
+| `local_training/data_preparation.py` | Implement feature description, local loaders, inference-sample loading, probes, and server validation loader | Seven hook names, arguments, local-data boundary, and batch contract |
 | `local_training/training.py` | Implement `train_model` and `evaluate_model` | Function names, signatures, and return contracts |
-| `tool_ai/manifest.json` | Replace Tool description, feature names, output description, and labels | `description`, `features`, and `output` JSON structure |
+| `tool_ai/manifest.json` | Replace Tool description, feature names, input/output JSON Schema, and labels | Keep `schemaVersion`, `input`, `description`, `features`, and `output`; schemas must match `predict()` |
 | `tool_ai/tool.py` | Implement Tool inference and one smoke input | Two hook names, arguments, and JSON-compatible returns |
 | `pyproject.toml` | No normal Task edits | FedOps package metadata, scripts, dependency hook, and `[tool.fedops.task]` paths |
 | `uv.lock` | Regenerate through Agent Studio Environment Sync | Never edit manually |
@@ -88,6 +88,7 @@ directly above each implementation gap in the corresponding Python file.
 | `validate_model_output(output, config)` | Raw probe output plus full config | JSON-serializable output summary; raise `ValueError` on mismatch |
 | `describe_input_features()` | None | JSON-serializable feature/label description with `raw_data_upload: false` |
 | `preprocess(sample)` | One raw sample mapping | Tensor, tuple/list of tensors, or tensor mapping accepted by the model |
+| `load_inference_sample(data_root, index=0)` | Task Data root or selected file/directory plus zero-based index | Exactly `{"payload": {...}, "metadata": {...}}` for local Tool inference |
 | `load_partition(dataset, validation_split, batch_size, *, data_root, seed=42, download=False)` | Local data binding and split settings | Exactly `(train_loader, validation_loader, test_loader)` |
 | `build_smoke_loaders(*, sample_count=32, batch_size=8, seed=42)` | Non-sensitive sample settings | Exactly `(train_loader, validation_loader)` with the real batch format |
 | `build_contract_probe(batch_size=2)` | Probe batch size | One non-sensitive batched model input |
@@ -114,8 +115,13 @@ One edit often affects several files:
   must not read or copy participant data.
 - `predict()` must apply the same preprocessing and load the same model architecture
   used by local and federated training.
+- `load_inference_sample()` must reuse the local file parsing rules used by
+  `load_partition()`. Agent Studio may pass the Task Data root, a selected
+  subdirectory, or a selected file; index `0` means the first record.
 - Every name in `tool_ai/manifest.json` `features` must exist in the payload consumed by
-  `predict()`. `output.description` and `output.labels` describe its result to Agent Builder.
+  `predict()`. `input.jsonSchema` validates inline and Data Source payloads before inference;
+  `output.jsonSchema` validates the result. `output.description` and `output.labels` describe
+  its meaning to Agent Builder.
 - Model constructor settings in `conf/config.yaml` must match `build_model(config)`.
 - `model.display_name` is the Registry-facing Primary Model name. It is not a global
   identifier; `@owner/task-slug` identifies the Federated Task.
@@ -154,6 +160,12 @@ dataset/
 
 Do not include raw data, credentials, or a user-specific absolute path in a Registry
 Release.
+
+Agent Builder uses the same folder. Leave its optional Data path blank to pass the
+whole root, or enter a relative file/subdirectory such as `MNIST/raw` or
+`client-2/records.csv`. The fixed `tool_ai.build_tool_data_sample()` wrapper calls
+`local_training.data_preparation.load_inference_sample()`; do not duplicate CSV,
+image, or sensor parsing in both files.
 
 ## Local development
 
@@ -196,6 +208,9 @@ live named metrics through `runtime.progress`; these machine-readable events are
 out of the normal log and rendered as metric cards and charts.
 Update `federated_task/tool_ai/manifest.json` and `tool.py` together so Agent Builder
 receives the same feature names and output meaning implemented by the Tool adapter.
+Use standard JSON Schema types (`object`, `array`, `string`, `number`, `integer`,
+`boolean`) with `required`, `properties`, `items`, and `additionalProperties` so the
+same Tool contract works for images, tabular records, time series, and other models.
 
 ## Limitations
 

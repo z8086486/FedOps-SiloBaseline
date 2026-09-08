@@ -23,8 +23,9 @@ It supports:
 - Release Readiness for Owner publication
 - Participation Readiness for participant data and parameter-update preflight
 - Agent Builder Tool inference with an Initial or Global Model
-- one optional `build_tool_data_sample(data_root, index)` adapter so Agent Builder
-  can use the same local-only Task Data folder for inference without uploading data
+- one optional `load_inference_sample(data_root, index)` data adapter, reached through
+  the fixed Tool wrapper, so Agent Builder can use a selected local-only Task Data
+  file or directory for inference without uploading data
 
 Owner-editable code is grouped under `local_training/`, `tool_ai/`, and `conf/`.
 FedOps-managed integration is grouped under `federated_learning/`, `task_readiness/`,
@@ -36,9 +37,20 @@ Runnable domain examples are kept separately in
 
 ## Verify
 
+### Optional server evaluation
+
+Baseline 0.19.0 uses FedOps 1.1.30.18 at immutable source revision
+`733f1696edc234073f0c1cd1a96e6580bfbcffeb`. Its lock and Web/Server profile must
+match this revision. Existing published Releases retain their original pins;
+never export this template over Baseline 0.18.0 or an older release.
+
+New config defaults to `server_evaluation.enabled: false` (client evaluation
+aggregation). Enable it only with real server validation data. Smoke loaders are
+for code checks, never a substitute for global model quality evaluation.
+
 ```bash
 cd federated-task-baseline
-uv sync --locked --extra participate --link-mode copy
+uv sync --frozen --link-mode copy
 cd ..
 federated-task-baseline/.venv/bin/python -m unittest discover -s tests
 federated-task-baseline/.venv/bin/python tools/build_release.py
@@ -46,7 +58,7 @@ federated-task-baseline/.venv/bin/python tools/build_release.py
 
 ## Release policy
 
-- Current development release: `federated-task-baseline@0.17.0`
+- Current release: `federated-task-baseline@0.19.0`
 - Existing releases remain available through Git history and existing Web/S3 tasks.
 - A release is immutable. Changes require a new version.
 - Raw datasets, `.venv`, local artifacts, credentials, and readiness run details are

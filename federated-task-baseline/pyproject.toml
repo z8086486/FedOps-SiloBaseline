@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fedops-federated-task"
-version = "0.17.0"
+version = "0.19.0"
 description = "Functionally organized implementation-contract template for a FedOps Federated Task"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
@@ -31,7 +31,7 @@ include = [
 ]
 
 [tool.uv.sources]
-fedops = { git = "https://github.com/gachon-CCLab/FedOps.git", rev = "fde3137f6e94bc4558352b109a8c87186d20208c", subdirectory = "src/python" }
+fedops = { git = "https://github.com/gachon-CCLab/FedOps.git", rev = "733f1696edc234073f0c1cd1a96e6580bfbcffeb", subdirectory = "src/python" }
 torch = [
     { index = "pytorch-cpu", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]

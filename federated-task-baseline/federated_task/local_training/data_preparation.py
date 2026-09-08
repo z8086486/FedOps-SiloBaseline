@@ -8,6 +8,7 @@ Real and synthetic loaders must yield the same ``(inputs, targets)`` batch shape
 from __future__ import annotations
 
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 
 from torch.utils.data import DataLoader
@@ -54,6 +55,25 @@ def preprocess(sample: Mapping[str, Any]) -> Any:
     del sample
     raise NotImplementedError(
         "Implement federated_task.local_training.data_preparation.preprocess()"
+    )
+
+
+# FEDOPS OPTIONAL CONTRACT - DO NOT RENAME OR CHANGE ARGUMENTS/DEFAULT VALUE.
+# EDIT HERE - load one local record for Agent Builder without duplicating parsing in tool.py.
+def load_inference_sample(data_root: str | Path, index: int = 0) -> dict[str, Any]:
+    """Load one Task Data record and return Tool AI JSON plus local metadata.
+
+    ``data_root`` is either the Task Data root or the file/subdirectory selected
+    in Agent Builder. ``index`` is zero-based, so ``0`` selects the first record.
+
+    Return exactly ``{"payload": {...}, "metadata": {...}}``. The payload must
+    match ``tool_ai/manifest.json`` and ``tool_ai.tool.predict()``. Metadata may
+    contain a local index, filename, or label for inspection. Neither raw data
+    nor metadata is uploaded to FedOps Web.
+    """
+    del data_root, index
+    raise NotImplementedError(
+        "Implement federated_task.local_training.data_preparation.load_inference_sample()"
     )
 
 
@@ -160,6 +180,10 @@ def gl_model_torch_validation(
     download: bool = False,
 ) -> DataLoader:
     """Load the aggregation server's permitted global-validation dataset.
+
+    Implement this hook only when server_evaluation.enabled is True. Keep the
+    signature when disabled; the runtime will not call it. Never substitute
+    build_smoke_loaders() for missing server validation data.
 
     Returns:
         One ``DataLoader`` with the same ``(inputs, targets)`` batch contract.

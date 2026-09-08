@@ -3,7 +3,7 @@
 # Use one `library==version` entry per line. Agent Studio validates this file,
 # resolves transitive dependencies into uv.lock, and installs the same contract
 # into every selected Python Environment.
-fedops==1.1.30.15
+fedops==1.1.30.18
 fastapi==0.116.1
 hydra-core==1.3.2
 numpy==1.26.4

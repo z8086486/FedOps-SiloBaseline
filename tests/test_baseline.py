@@ -20,6 +20,7 @@ from federated_task.local_training.data_preparation import (
     build_contract_probe,
     build_smoke_loaders,
     describe_input_features,
+    load_inference_sample,
     load_partition,
 )
 from federated_task.local_training.model import build_model, run_model, validate_model_output
@@ -35,6 +36,7 @@ class BaselineContractTest(unittest.TestCase):
         self.assertEqual(config["model_type"], "Pytorch")
         self.assertEqual(config["dataset"]["name"], "replace-with-dataset-name")
         self.assertEqual(config["server_evaluation"]["max_batches"], 8)
+        self.assertFalse(config["server_evaluation"]["enabled"])
         self.assertNotIn("output_size", config["model"])
         config["local_training"]["batch_size"] = 0
         with self.assertRaisesRegex(ValueError, "batch_size"):
@@ -76,6 +78,10 @@ class BaselineContractTest(unittest.TestCase):
             ["dataset", "validation_split", "batch_size", "data_root", "seed", "download"],
         )
         self.assertEqual(
+            list(inspect.signature(load_inference_sample).parameters),
+            ["data_root", "index"],
+        )
+        self.assertEqual(
             list(inspect.signature(train_model).parameters),
             ["model", "loader", "epochs", "learning_rate", "device", "max_batches"],
         )
@@ -94,6 +100,7 @@ class BaselineContractTest(unittest.TestCase):
             lambda: run_model(None, None),
             lambda: validate_model_output(None, {}),
             describe_input_features,
+            lambda: load_inference_sample(".", 0),
             lambda: build_contract_probe(2),
             lambda: build_smoke_loaders(sample_count=8, batch_size=4, seed=42),
             build_tool_smoke_payload,
@@ -118,9 +125,9 @@ class BaselineContractTest(unittest.TestCase):
 
     def test_release_manifest_contains_only_workspace_files(self):
         manifest = build_manifest()
-        self.assertEqual(manifest["baseline"]["release_version"], "0.17.0")
+        self.assertEqual(manifest["baseline"]["release_version"], "0.19.0")
         self.assertEqual(manifest["compatibility"]["agent_studio_task_schema"], 3)
-        self.assertEqual(manifest["compatibility"]["fedops_participation"], "==1.1.30.15")
+        self.assertEqual(manifest["compatibility"]["fedops_participation"], "==1.1.30.18")
         paths = {entry["path"] for entry in manifest["files"]}
         by_path = {entry["path"]: entry for entry in manifest["files"]}
         self.assertIn("federated_task/task_readiness/check.py", paths)
@@ -140,6 +147,7 @@ class BaselineContractTest(unittest.TestCase):
             ROOT / "federated-task-baseline/federated_task/tool_ai/tool.py"
         ).read_text(encoding="utf-8")
         self.assertIn("def build_tool_data_sample(data_root: str | Path, index: int = 0)", tool_source)
+        self.assertIn("return load_inference_sample(data_root, index)", tool_source)
         self.assertTrue(by_path["requirements.txt"]["editable"])
         self.assertFalse(by_path["pyproject.toml"]["editable"])
         self.assertFalse(by_path["uv.lock"]["editable"])
@@ -179,6 +187,7 @@ class BaselineContractTest(unittest.TestCase):
             BASELINE / "federated_task/federated_learning/client_main.py"
         ).read_text(encoding="utf-8")
         self.assertIn("config.server_evaluation.max_batches", server_main_source)
+        self.assertIn("prepare_validation_loader(config, gl_model_torch_validation)", server_main_source)
         self.assertIn("test_torch(", server_main_source)
         self.assertIn("test_torch()", client_main_source)
 
@@ -187,8 +196,15 @@ class BaselineContractTest(unittest.TestCase):
             (BASELINE / "federated_task/tool_ai/manifest.json").read_text(encoding="utf-8")
         )
         self.assertEqual(manifest["features"], ["replace_with_feature_name"])
+        self.assertEqual(manifest["input"]["jsonSchema"]["type"], "object")
+        self.assertEqual(
+            manifest["input"]["jsonSchema"]["required"],
+            ["replace_with_feature_name"],
+        )
         self.assertIn("description", manifest["output"])
         self.assertEqual(manifest["output"]["labels"], [])
+        self.assertEqual(manifest["output"]["jsonSchema"]["type"], "object")
+        self.assertEqual(manifest["output"]["jsonSchema"]["required"], ["prediction"])
 
     def test_fedops_client_and_server_entrypoints_are_present(self):
         self.assertTrue(callable(client_main))

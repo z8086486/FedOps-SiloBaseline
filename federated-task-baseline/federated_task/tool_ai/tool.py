@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from ..local_training.data_preparation import load_inference_sample
+
 
 # FEDOPS CONTRACT - DO NOT RENAME OR CHANGE ARGUMENTS/RETURN TYPE.
 # EDIT HERE - keep implementation consistent with manifest.json and local training.
@@ -53,13 +55,10 @@ def build_tool_smoke_payload() -> dict[str, Any]:
 # FEDOPS OPTIONAL CONTRACT - keep this signature to use Task Data in Agent Builder.
 # EDIT HERE - read one record from data_root and return the exact predict() payload.
 def build_tool_data_sample(data_root: str | Path, index: int = 0) -> dict[str, Any]:
-    """Convert one local training-data record into a Tool AI inference payload.
+    """Delegate Task Data parsing to the shared local-data adapter.
 
-    Return ``{"payload": {...}, "metadata": {...}}``. The payload must match
-    ``manifest.json`` and :func:`predict`. Metadata may contain an index or
-    label for local inspection, but is never sent to FedOps Web.
+    Keep this wrapper so Agent Studio has one stable entrypoint. Implement the
+    dataset-specific path and zero-based record loading once in
+    ``local_training.data_preparation.load_inference_sample``.
     """
-    del data_root, index
-    raise NotImplementedError(
-        "Implement build_tool_data_sample(data_root, index) to connect Task Data inference"
-    )
+    return load_inference_sample(data_root, index)

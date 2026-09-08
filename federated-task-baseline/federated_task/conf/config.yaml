@@ -46,5 +46,8 @@ local_training:
 # responsive server start and shorter rounds. The default is 8 batches.
 # Use `max_batches: null` only when every server evaluation must scan the
 # complete owner-controlled validation loader.
-# server_evaluation:
-#   max_batches: 8
+server_evaluation:
+  # false: aggregate evaluation of the Global Model on clients' real test data.
+  # true: require server data_root or a Campaign validation-data connection.
+  enabled: false
+  max_batches: 8

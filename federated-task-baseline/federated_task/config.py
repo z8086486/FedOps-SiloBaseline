@@ -93,6 +93,8 @@ def validate_config(config: dict[str, Any]) -> None:
     if not isinstance(server_evaluation, dict):
         raise ValueError("config.yaml: server_evaluation must be an object")
     max_batches = server_evaluation.get("max_batches")
+    if "enabled" in server_evaluation and type(server_evaluation["enabled"]) is not bool:
+        raise ValueError("config.yaml: server_evaluation.enabled must be boolean")
     if max_batches is not None and (
         isinstance(max_batches, bool)
         or not isinstance(max_batches, int)
